@@ -33,8 +33,8 @@
           ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
      -->
     </properties>
-    <name>QRebel plugin</name>
-    <description>This is sample QRebel Hub plugin description.</description>
+    <name>QRebel</name>
+    <description>Query your application performance in QRebel and manage your build status.</description>
     <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
     <licenses>
         <license>

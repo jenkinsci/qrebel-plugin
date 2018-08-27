@@ -22,7 +22,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundSetter;
 
 public class QRebelBuilder extends Builder implements SimpleBuildStep {
-    private static final String QREBEL_BASE_URL = "https://hub.xrebel.com/api/applications/";
+    private static final String QREBEL_BASE_URL = "https://hub.qrebel.com/api/applications/";
 
     private final String appName;
     private final String target;
