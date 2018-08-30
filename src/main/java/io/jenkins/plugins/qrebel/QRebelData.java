@@ -33,15 +33,15 @@ public class QRebelData {
     }
 
     public Long getExceptionCount() {
-        return (Long) issues.get("EXCEPTIONS");
+        return parseIssueCount("EXCEPTIONS");
     }
 
     public Long getDurationCount() {
-        return (Long) issues.get("DURATION");
+        return parseIssueCount("DURATION");
     }
 
     public Long getIOCount() {
-        return (Long) issues.get("IO");
+        return parseIssueCount("IO");
     }
 
     public String getAppName() {
@@ -58,5 +58,10 @@ public class QRebelData {
                 .collect(Collectors.toList());
 
         return Optional.of(entryPointNames);
+    }
+
+    private Long parseIssueCount(String name) {
+        Long value = (Long) issues.get(name);
+        return value != null ? value : 0;
     }
 }
