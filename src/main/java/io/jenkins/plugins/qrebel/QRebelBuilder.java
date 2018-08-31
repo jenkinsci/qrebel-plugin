@@ -6,6 +6,7 @@ import hudson.FilePath;
 import hudson.model.*;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.VariableResolver;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -33,6 +34,7 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     public int ioFail;
     public int exceptionFail;
 
+    private VariableResolver buildVariableResolver;
 
     @DataBoundConstructor
     public QRebelBuilder(String appName, String target, String baseline, String entryPoints, String apiKey,
@@ -73,6 +75,12 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     }
 
     @Override
+    public boolean prebuild(AbstractBuild<?, ?> build, BuildListener listener) {
+        buildVariableResolver = build.getBuildVariableResolver();
+        return super.prebuild(build, listener);
+    }
+
+    @Override
     public void perform(Run<?, ?> run, FilePath workspace, Launcher launcher, TaskListener listener) throws IOException {
         process(listener.getLogger(), run);
     }
@@ -89,6 +97,20 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
         public String getDisplayName() {
             return Messages.QRebelBuilder_DescriptorImpl_DisplayName();
         }
+    }
+
+    private String resolveParameter(String name) {
+        if (!name.startsWith("$")) {
+            return name;
+        }
+
+        Optional<Object> resolvedParameter = Optional.ofNullable(buildVariableResolver.resolve(name.substring(1)));
+
+        if (resolvedParameter.isPresent()) {
+            return (String) resolvedParameter.get();
+        }
+
+        throw new IllegalArgumentException(String.format("Parameter %s is not set", name));
     }
 
     private void process(PrintStream logger, Run<?, ?> run) throws IOException {
@@ -144,7 +166,7 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     }
 
     private void setRemoteBaseline() throws IOException {
-        URL baseLineUrl = new URL("https://hub.xrebel.com/api/applications/" + appName + "/baselines/default/");
+        URL baseLineUrl = new URL("https://hub.xrebel.com/api/applications/" + resolveParameter(appName) + "/baselines/default/");
         HttpURLConnection baseUrl = (HttpURLConnection) baseLineUrl.openConnection();
         baseUrl.setRequestMethod("PUT");
         baseUrl.setDoOutput(true);
@@ -159,11 +181,11 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
     private String buildApiUrl() {
         return QREBEL_BASE_URL +
-                appName +
+                resolveParameter(appName) +
                 "/" +
                 "issues" +
                 "/?targetBuild=" +
-                target +
+                resolveParameter(target) +
                 "&defaultBaseline";
     }
 
