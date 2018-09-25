@@ -30,12 +30,5 @@
                 <f:number clazz="number" default="0"/>
             </f:entry>
         </f:block>
-
-        <f:block>
-            <b>Entry points settings</b>
-            <f:entry title="${%EntryPointFail}" field="entryPoints">
-                <f:textbox title="${%EntryPoints}"/>
-            </f:entry>
-        </f:block>
     </f:advanced>
 </j:jelly>

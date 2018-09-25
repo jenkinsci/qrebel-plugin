@@ -1,26 +1,21 @@
 package io.jenkins.plugins.qrebel;
 
-import hudson.Launcher;
 import hudson.Extension;
 import hudson.FilePath;
+import hudson.Launcher;
 import hudson.model.*;
-import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import hudson.util.VariableResolver;
-import org.apache.commons.lang.StringUtils;
+import jenkins.tasks.SimpleBuildStep;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-
-import jenkins.tasks.SimpleBuildStep;
-import org.jenkinsci.Symbol;
-import org.kohsuke.stapler.DataBoundSetter;
 
 public class QRebelBuilder extends Builder implements SimpleBuildStep {
     private static final String QREBEL_BASE_URL = "https://hub.qrebel.com/api/applications/";
@@ -29,7 +24,6 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     private final String target;
     private final String baseline;
     private final String apiKey;
-    private String entryPoints;
     public int durationFail;
     public int ioFail;
     public int exceptionFail;
@@ -37,7 +31,7 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     private VariableResolver buildVariableResolver;
 
     @DataBoundConstructor
-    public QRebelBuilder(String appName, String target, String baseline, String entryPoints, String apiKey,
+    public QRebelBuilder(String appName, String target, String baseline, String apiKey,
                          int durationFail, int ioFail, int exceptionFail) {
         this.appName = appName;
         this.target = target;
@@ -46,11 +40,6 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
         this.durationFail = durationFail;
         this.ioFail = ioFail;
         this.exceptionFail = exceptionFail;
-        this.entryPoints = entryPoints;
-    }
-
-    public String getEntryPoints() {
-        return entryPoints;
     }
 
     public String getApiKey() {
@@ -67,11 +56,6 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
     public String getBaseline() {
         return baseline;
-    }
-
-    @DataBoundSetter
-    public void setEntryPoints(String entryPoints) {
-        this.entryPoints = entryPoints;
     }
 
     @Override
@@ -128,13 +112,6 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
                 || qRData.getExceptionCount() > exceptionFail) {
             failBuild = true;
             issuesFail = true;
-        }
-
-        if (!entryPoints.isEmpty()) {
-            entryPointsFail = hasEntryPointIssues(qRData);
-            if (entryPointsFail) {
-                failBuild = true;
-            }
         }
 
         if (failBuild) {
@@ -200,15 +177,5 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
         if (entryPointsFail && qRData.getEntryPointNames().isPresent()) {
             logger.println("Following entry points has issues: " + qRData.getEntryPointNames().get());
         }
-    }
-
-    private boolean hasEntryPointIssues(QRebelData qRData) {
-        Optional<List<String>> entryPointNames = qRData.getEntryPointNames();
-        String entryPointsNoComma = entryPoints.replace(",", "");
-        String[] entryPointsParsed = StringUtils.substringsBetween(entryPointsNoComma, "\"", "\"");
-
-        return entryPointNames.map(strings -> strings.stream().anyMatch(e -> Arrays.asList(entryPointsParsed)
-                .contains(e)))
-                .orElse(false);
     }
 }
