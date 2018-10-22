@@ -11,14 +11,16 @@ import java.util.stream.Collectors;
 public class QRebelData {
     private final String appName;
     private final String target;
+    private final String viewUrl;
     private final JSONObject issues;
     private final JSONArray entryPoints;
 
-    private QRebelData(String appName, String target, JSONObject issues, JSONArray entryPoints) {
+    private QRebelData(String appName, String target, JSONObject issues, JSONArray entryPoints, String viewUrl) {
         this.appName = appName;
         this.target = target;
         this.issues = issues;
         this.entryPoints = entryPoints;
+        this.viewUrl = viewUrl;
     }
 
     public static QRebelData parse(String json) {
@@ -26,10 +28,11 @@ public class QRebelData {
 
         String appName = (String) jsonObject.get("appName");
         String target = (String) jsonObject.get("target");
+        String viewUrl = (String) jsonObject.get("appViewUrl");
         JSONObject issues = ((JSONObject) jsonObject.get("issuesCount"));
         JSONArray entryPoints = (JSONArray) jsonObject.get("entryPoints");
 
-        return new QRebelData(appName, target, issues, entryPoints);
+        return new QRebelData(appName, target, issues, entryPoints, viewUrl);
     }
 
     public Long getExceptionCount() {
@@ -50,6 +53,10 @@ public class QRebelData {
 
     public String getTarget() {
         return target;
+    }
+
+    public String getViewUrl() {
+        return viewUrl;
     }
 
     public Optional<List<String>> getEntryPointNames() {

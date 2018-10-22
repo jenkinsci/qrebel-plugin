@@ -116,6 +116,9 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
         if (failBuild) {
             run.setResult(Result.FAILURE);
+            run.setDescription(String.format("QRebel: Slow Request count is %d, Excessive IO count is %d, Exception count is %d",
+                    qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount())
+                    + "\nQRebel application view URL: " + qRData.getViewUrl());
             logFailDescription(logger, qRData, issuesFail, entryPointsFail);
         }
     }
