@@ -6,10 +6,10 @@
         <f:textbox/>
     </f:entry>
 
-    <f:entry title="${%Target}" field="target">
+    <f:entry title="${%TargetBuild}" field="targetBuild">
         <f:textbox/>
     </f:entry>
-    <f:entry title="${%Baseline}" field="baseline">
+    <f:entry title="${%BaselineBuild}" field="baselineBuild">
         <f:textbox/>
     </f:entry>
 
@@ -27,6 +27,11 @@
                 <f:number clazz="number" default="0"/>
             </f:entry>
             <f:entry title="${%ExceptionFail}" field="exceptionFail">
+                <f:number clazz="number" default="0"/>
+            </f:entry>
+        </f:block>
+        <f:block>
+            <f:entry title="${%Threshold}" field="threshold">
                 <f:number clazz="number" default="0"/>
             </f:entry>
         </f:block>

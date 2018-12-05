@@ -29,7 +29,7 @@ public class QRebelData {
         String appName = (String) jsonObject.get("appName");
         String target = (String) jsonObject.get("target");
         String viewUrl = (String) jsonObject.get("appViewUrl");
-        JSONObject issues = ((JSONObject) jsonObject.get("issuesCount"));
+        JSONObject issues = (JSONObject) jsonObject.get("issuesCount");
         JSONArray entryPoints = (JSONArray) jsonObject.get("entryPoints");
 
         return new QRebelData(appName, target, issues, entryPoints, viewUrl);
@@ -58,6 +58,25 @@ public class QRebelData {
     public String getViewUrl() {
         return viewUrl;
     }
+
+    public Optional<List<Long>> getEntryPointTimes() {
+        List<JSONObject> duration = (List<JSONObject>) entryPoints.stream()
+                .map(entry -> ((JSONObject) entry)
+                        .get("duration"))
+                .filter(e -> e != null)
+                .collect(Collectors.toList());
+
+        if (duration.size() > 0) {
+
+            List<Long> slowestPercentile = duration.stream()
+                    .map(entry -> ((Long) entry.get("slowestPercentile")))
+                    .collect(Collectors.toList());
+            return Optional.of(slowestPercentile);
+        }
+
+        return Optional.empty();
+    }
+
 
     public Optional<List<String>> getEntryPointNames() {
         List<String> entryPointNames = (List<String>) entryPoints.stream()
