@@ -60,15 +60,14 @@ public class QRebelData {
     }
 
     public Optional<List<Long>> getEntryPointTimes() {
-        List<JSONObject> duration = (List<JSONObject>) entryPoints.stream()
+        List<JSONObject> durations = (List<JSONObject>) entryPoints.stream()
                 .map(entry -> ((JSONObject) entry)
                         .get("duration"))
                 .filter(e -> e != null)
                 .collect(Collectors.toList());
 
-        if (duration.size() > 0) {
-
-            List<Long> slowestPercentile = duration.stream()
+        if (durations.size() > 0) {
+            List<Long> slowestPercentile = durations.stream()
                     .map(entry -> ((Long) entry.get("slowestPercentile")))
                     .collect(Collectors.toList());
             return Optional.of(slowestPercentile);
@@ -76,7 +75,6 @@ public class QRebelData {
 
         return Optional.empty();
     }
-
 
     public Optional<List<String>> getEntryPointNames() {
         List<String> entryPointNames = (List<String>) entryPoints.stream()
