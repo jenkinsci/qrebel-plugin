@@ -33,9 +33,8 @@
           ~ stapler-plugin.version: The Stapler Maven plugin version required by the plugin.
      -->
     </properties>
-    <name>QRebel</name>
+    <name>QRebel Plugin</name>
     <description>Query your application performance in QRebel and manage your build status.</description>
-    <!-- The default licence for Jenkins OSS Plugins is MIT. Substitute for the applicable one if needed. -->
     <licenses>
         <license>
             <name>MIT License</name>
@@ -99,14 +98,18 @@
 
     </dependencies>
 
-    <!-- If you want this to appear on the wiki page:
     <developers>
       <developer>
-        <id>bhacker</id>
-        <name>Bob Q. Hacker</name>
-        <email>bhacker@nowhere.net</email>
+        <id>f0lik</id>
+        <name>Pavel Fol</name>
+        <email>Pavel.Fol@roguewave.com</email>
       </developer>
-    </developers> -->
+      <developer>
+        <id>vasilyt</id>
+        <name>Vasily Tsvetkov</name>
+        <email>Vasily.Tsvetkov@roguewave.com</email>
+      </developer>
+    </developers>
 
     <!-- Assuming you want to host on @jenkinsci:
     <url>https://wiki.jenkins.io/display/JENKINS/TODO+Plugin</url>
