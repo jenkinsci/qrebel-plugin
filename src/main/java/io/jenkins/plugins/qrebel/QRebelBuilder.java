@@ -244,9 +244,9 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
         logger.println("Performance regression have been found in the current build. Failing build.");
 
-        logger.println(String.format("Slow Requests: %d\n" +
-                        " Excessive IO: %d \n" +
-                        " Exceptions: %d  \n" +
+        logger.println(String.format("Slow Requests: %d%n" +
+                        " Excessive IO: %d %n" +
+                        " Exceptions: %d  %n" +
                         " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
                 qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), threshold, maximumDelay(qRData)));
 
