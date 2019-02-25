@@ -4,6 +4,7 @@
 .idea/
 *.iml
 work/
+targett/
 
 # User-specific stuff:
 .idea/**/workspace.xml
