@@ -30,30 +30,31 @@ class QRebelStepPerformer {
     private static final String QREBEL_BASE_URL = "https://hub.qrebel.com/api/applications/";
 
     private final QRebelBuilder fields;
-    private final PrintStream logger;
     private final ParameterResolver resolver;
 
-    private QRebelStepPerformer(QRebelBuilder fields, PrintStream logger, ParameterResolver resolver) {
+    private QRebelStepPerformer(QRebelBuilder fields, ParameterResolver resolver) {
         this.fields = fields;
-        this.logger = logger;
         this.resolver = resolver;
     }
 
     static void perform(QRebelBuilder stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
         if (run instanceof Build) {
-            new QRebelStepPerformer(stepFields, listener.getLogger(), ParameterResolver.make((Build) run, listener))
-                .perform(run);
+            new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener))
+                .perform(run, listener.getLogger());
         }
     }
 
-    private void perform(Run<?, ?> run) throws IOException {
+    private void perform(Run<?, ?> run, PrintStream logger) throws IOException {
         logger.println("AppName" + fields.appName + " resolveAppName " + resolver.get(fields.appName));
         logger.println("Baseline Build: " + fields.baselineBuild);
         logger.println("Target Build: " + fields.targetBuild + " resolved: " + resolver.get(fields.targetBuild));
 
         setRemoteBaseline();
 
-        StringBuilder issues = getIssuesJson();
+        logger.println("Going to perform QRebel API call..");
+        String apiUrl = buildApiUrl();
+        logger.println("Calling URL - " + apiUrl);
+        StringBuilder issues = getIssuesJson(apiUrl);
         QRebelData qRData = QRebelData.parse(issues.toString());
 
         boolean failBuild = false;
@@ -107,12 +108,9 @@ class QRebelStepPerformer {
         return 0;
     }
 
-    private StringBuilder getIssuesJson() throws IOException {
-        logger.println("Going to perform QRebel API call..");
-
-        URL issuesUrl = new URL(buildApiUrl());
+    private StringBuilder getIssuesJson(String apiUrl) throws IOException {
+        URL issuesUrl = new URL(apiUrl);
         HttpURLConnection con = (HttpURLConnection) issuesUrl.openConnection();
-        logger.println("Calling URL - " + issuesUrl.toString());
 
         con.setRequestMethod("GET");
         con.setRequestProperty("authorization", fields.apiKey);
