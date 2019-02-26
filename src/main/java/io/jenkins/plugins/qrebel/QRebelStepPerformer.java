@@ -32,18 +32,16 @@ class QRebelStepPerformer {
     private final QRebelBuilder fields;
     private final PrintStream logger;
     private final ParameterResolver resolver;
-    private final Run<?, ?> run;
 
-    private QRebelStepPerformer(QRebelBuilder fields, PrintStream logger, ParameterResolver resolver, Run<?, ?> run) {
+    private QRebelStepPerformer(QRebelBuilder fields, PrintStream logger, ParameterResolver resolver) {
         this.fields = fields;
         this.logger = logger;
         this.resolver = resolver;
-        this.run = run;
     }
 
     static void perform(QRebelBuilder stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
         if (run instanceof Build) {
-            new QRebelStepPerformer(stepFields, listener.getLogger(), ParameterResolver.make((Build) run, listener), run)
+            new QRebelStepPerformer(stepFields, listener.getLogger(), ParameterResolver.make((Build) run, listener))
                 .perform(run);
         }
     }
@@ -69,7 +67,17 @@ class QRebelStepPerformer {
 
         if (failBuild) {
             run.setResult(Result.FAILURE);
-            logFailDescription(qRData);
+            String failureDescription = getFailureDescription(qRData, run.getDescription());
+            run.setDescription(failureDescription);
+            logger.println("Performance regression have been found in the current build. Failing build.");
+
+            logger.println(String.format("Slow Requests: %d%n" +
+                    " Excessive IO: %d %n" +
+                    " Exceptions: %d  %n" +
+                    " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
+                qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData)));
+
+            logger.println("For more detail check your <a href=\"+ qRData.getViewUrl()/\">dashboard</a>");
         }
     }
 
@@ -148,10 +156,10 @@ class QRebelStepPerformer {
                 "&defaultBaseline";
     }
 
-    private void logFailDescription(QRebelData qRData) throws IOException {
+    private String getFailureDescription(QRebelData qRData, String buildDescription) {
         StringBuilder descriptionBuilder = new StringBuilder();
-        if (run.getDescription() != null && run.getDescription().length() > 0) {
-            descriptionBuilder.append(run.getDescription());
+        if (buildDescription != null && buildDescription.length() > 0) {
+            descriptionBuilder.append(buildDescription);
         }
         descriptionBuilder.append(String.format("Failing build due to performance regressions found in %s compared to %s. <br/>" +
                         "Slow Requests: %d <br/>" +
@@ -161,16 +169,7 @@ class QRebelStepPerformer {
                         "For full report check your <a href= %s >dashboard</a>.<br/>",
                 qRData.getAppName(), resolver.get(fields.baselineBuild), qRData.getDurationCount(), qRData.getIOCount(),
                 qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData), qRData.getViewUrl()));
-        run.setDescription(descriptionBuilder.toString());
 
-        logger.println("Performance regression have been found in the current build. Failing build.");
-
-        logger.println(String.format("Slow Requests: %d%n" +
-                        " Excessive IO: %d %n" +
-                        " Exceptions: %d  %n" +
-                        " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
-                qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData)));
-
-        logger.println("For more detail check your <a href=\"+ qRData.getViewUrl()/\">dashboard</a>");
+        return descriptionBuilder.toString();
     }
 }
