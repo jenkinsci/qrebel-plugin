@@ -65,7 +65,8 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
-        QRebelStepPerformer.perform(this, run, listener);
+        QRebelStepPerformer logic = QRebelStepPerformer.make(this, run, listener);
+        logic.perform();
     }
 
     @Symbol("qrebel")

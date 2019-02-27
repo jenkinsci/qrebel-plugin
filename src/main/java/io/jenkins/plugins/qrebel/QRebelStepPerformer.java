@@ -1,17 +1,18 @@
 package io.jenkins.plugins.qrebel;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 
 import hudson.model.Build;
 import hudson.model.Result;
@@ -30,46 +31,47 @@ class QRebelStepPerformer {
     private static final String QREBEL_BASE_URL = "https://hub.qrebel.com/api/applications/";
 
     private final QRebelBuilder fields;
-    private final ParameterResolver resolver;
+    private final ParameterResolver parameterResolver;
+    private final PrintStream logger;
+    private final Run<?, ?> run;
 
-    private QRebelStepPerformer(QRebelBuilder fields, ParameterResolver resolver) {
+    private QRebelStepPerformer(QRebelBuilder fields, ParameterResolver parameterResolver, PrintStream logger, Run<?, ?> run) {
         this.fields = fields;
-        this.resolver = resolver;
+        this.parameterResolver = parameterResolver;
+        this.logger = logger;
+        this.run = run;
     }
 
-    static void perform(QRebelBuilder stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
+    static QRebelStepPerformer make(QRebelBuilder stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
         if (run instanceof Build) {
-            new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener))
-                .perform(run, listener.getLogger());
+            return new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener), listener.getLogger(), run);
         }
+
+        throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
     }
 
-    private void perform(Run<?, ?> run, PrintStream logger) throws IOException {
-        logger.println("AppName" + fields.appName + " resolveAppName " + resolver.get(fields.appName));
+    void perform() throws IOException {
+        logger.println("AppName" + fields.appName + " resolveAppName " + parameterResolver.get(fields.appName));
         logger.println("Baseline Build: " + fields.baselineBuild);
-        logger.println("Target Build: " + fields.targetBuild + " resolved: " + resolver.get(fields.targetBuild));
+        logger.println("Target Build: " + fields.targetBuild + " resolved: " + parameterResolver.get(fields.targetBuild));
 
         setRemoteBaseline();
 
         logger.println("Going to perform QRebel API call..");
         String apiUrl = buildApiUrl();
         logger.println("Calling URL - " + apiUrl);
-        StringBuilder issues = getIssuesJson(apiUrl);
-        QRebelData qRData = QRebelData.parse(issues.toString());
+        String issues = getIssuesJson(apiUrl);
+        QRebelData qRData = QRebelData.parse(issues);
 
-        boolean failBuild = false;
-
-        if (qRData.getDurationCount() > fields.durationFail
-                || qRData.getIOCount() > fields.ioFail
-                || qRData.getExceptionCount() > fields.exceptionFail
-                || isThresholdProvidedAndExceeded(qRData)) {
-            failBuild = true;
-        }
+        boolean failBuild = qRData.getDurationCount() > fields.durationFail
+            || qRData.getIOCount() > fields.ioFail
+            || qRData.getExceptionCount() > fields.exceptionFail
+            || isThresholdProvidedAndExceeded(qRData);
 
         if (failBuild) {
             run.setResult(Result.FAILURE);
-            String failureDescription = getFailureDescription(qRData, run.getDescription());
-            run.setDescription(failureDescription);
+            String initialDescription = run.getDescription();
+            run.setDescription(getFailureDescription(qRData, initialDescription));
             logger.println("Performance regression have been found in the current build. Failing build.");
 
             logger.println(String.format("Slow Requests: %d%n" +
@@ -78,7 +80,7 @@ class QRebelStepPerformer {
                     " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
                 qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData)));
 
-            logger.println("For more detail check your <a href=\"+ qRData.getViewUrl()/\">dashboard</a>");
+            logger.println("For more detail check your <a href=\""+ qRData.getViewUrl() + "/\">dashboard</a>");
         }
     }
 
@@ -108,49 +110,37 @@ class QRebelStepPerformer {
         return 0;
     }
 
-    private StringBuilder getIssuesJson(String apiUrl) throws IOException {
-        URL issuesUrl = new URL(apiUrl);
-        HttpURLConnection con = (HttpURLConnection) issuesUrl.openConnection();
-
-        con.setRequestMethod("GET");
-        con.setRequestProperty("authorization", fields.apiKey);
-
-        BufferedReader in = new BufferedReader(
-                new InputStreamReader(con.getInputStream(), StandardCharsets.UTF_8));
-        String inputLine;
-        StringBuilder response = new StringBuilder();
-
-        while ((inputLine = in.readLine()) != null) {
-            response.append(inputLine);
+    private String getIssuesJson(String apiUrl) throws IOException {
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            HttpGet httpGet = new HttpGet(apiUrl);
+            httpGet.setHeader("authorization", fields.apiKey);
+            try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+                return EntityUtils.toString(response.getEntity());
+            }
         }
-        in.close();
-        return response;
     }
 
     private void setRemoteBaseline() throws IOException {
-        URL baseLineUrl = new URL("https://hub.xrebel.com/api/applications/" + resolver.get(fields.appName) + "/baselines/default/");
-        HttpURLConnection baseUrl = (HttpURLConnection) baseLineUrl.openConnection();
-        baseUrl.setRequestMethod("PUT");
-        baseUrl.setDoOutput(true);
-        baseUrl.setRequestProperty("Content-Type", "application/json");
-        baseUrl.setRequestProperty("authorization", fields.apiKey);
-        OutputStreamWriter out = new OutputStreamWriter(baseUrl.getOutputStream(), StandardCharsets.UTF_8);
-
-        if (StringUtils.isNotEmpty(fields.baselineBuild)) {
-            out.write("{ \"build\": \"" + fields.baselineBuild + "\" }");
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            HttpPut httpPut = new HttpPut(QREBEL_BASE_URL + parameterResolver.get(fields.appName) + "/baselines/default/");
+            httpPut.setHeader("Content-Type", "application/json");
+            httpPut.setHeader("authorization", fields.apiKey);
+            if (StringUtils.isNotEmpty(fields.baselineBuild)) {
+                httpPut.setEntity(new StringEntity("{ \"build\": \"" + fields.baselineBuild + "\" }"));
+            }
+            httpclient
+                .execute(httpPut)
+                .close();
         }
-
-        out.close();
-        baseUrl.getInputStream();
     }
 
     private String buildApiUrl() {
         return QREBEL_BASE_URL +
-                resolver.get(fields.appName) +
+                parameterResolver.get(fields.appName) +
                 "/" +
                 "issues" +
                 "/?targetBuild=" +
-                resolver.get(fields.targetBuild) +
+                parameterResolver.get(fields.targetBuild) +
                 "&defaultBaseline";
     }
 
@@ -165,7 +155,7 @@ class QRebelStepPerformer {
                         "Exceptions: %d <br/>" +
                         "Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
                         "For full report check your <a href= %s >dashboard</a>.<br/>",
-                qRData.getAppName(), resolver.get(fields.baselineBuild), qRData.getDurationCount(), qRData.getIOCount(),
+                qRData.getAppName(), parameterResolver.get(fields.baselineBuild), qRData.getDurationCount(), qRData.getIOCount(),
                 qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData), qRData.getViewUrl()));
 
         return descriptionBuilder.toString();
