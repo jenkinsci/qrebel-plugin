@@ -28,8 +28,6 @@ import hudson.model.TaskListener;
  */
 
 class QRebelStepPerformer {
-    private static final String QREBEL_BASE_URL = "https://hub.qrebel.com/api/applications/";
-
     private final QRebelBuilder fields;
     private final ParameterResolver parameterResolver;
     private final PrintStream logger;
@@ -51,9 +49,9 @@ class QRebelStepPerformer {
     }
 
     void perform() throws IOException {
-        logger.println("AppName" + fields.appName + " resolveAppName " + parameterResolver.get(fields.appName));
-        logger.println("Baseline Build: " + fields.baselineBuild);
-        logger.println("Target Build: " + fields.targetBuild + " resolved: " + parameterResolver.get(fields.targetBuild));
+        logger.println("AppName" + fields.getAppName() + " resolveAppName " + parameterResolver.get(fields.getAppName()));
+        logger.println("Baseline Build: " + fields.getBaselineBuild());
+        logger.println("Target Build: " + fields.getTargetBuild() + " resolved: " + parameterResolver.get(fields.getTargetBuild()));
 
         setRemoteBaseline();
 
@@ -113,7 +111,7 @@ class QRebelStepPerformer {
     private String getIssuesJson(String apiUrl) throws IOException {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             HttpGet httpGet = new HttpGet(apiUrl);
-            httpGet.setHeader("authorization", fields.apiKey);
+            httpGet.setHeader("authorization", fields.getApiKey());
             try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
                 return EntityUtils.toString(response.getEntity());
             }
@@ -122,11 +120,11 @@ class QRebelStepPerformer {
 
     private void setRemoteBaseline() throws IOException {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-            HttpPut httpPut = new HttpPut(QREBEL_BASE_URL + parameterResolver.get(fields.appName) + "/baselines/default/");
+            HttpPut httpPut = new HttpPut(fields.getServelUrl() + parameterResolver.get(fields.getAppName()) + "/baselines/default/");
             httpPut.setHeader("Content-Type", "application/json");
-            httpPut.setHeader("authorization", fields.apiKey);
-            if (StringUtils.isNotEmpty(fields.baselineBuild)) {
-                httpPut.setEntity(new StringEntity("{ \"build\": \"" + fields.baselineBuild + "\" }"));
+            httpPut.setHeader("authorization", fields.getApiKey());
+            if (StringUtils.isNotEmpty(fields.getBaselineBuild())) {
+                httpPut.setEntity(new StringEntity("{ \"build\": \"" + fields.getBaselineBuild() + "\" }"));
             }
             httpclient
                 .execute(httpPut)
@@ -135,12 +133,12 @@ class QRebelStepPerformer {
     }
 
     private String buildApiUrl() {
-        return QREBEL_BASE_URL +
-                parameterResolver.get(fields.appName) +
+        return fields.getServelUrl() +
+                parameterResolver.get(fields.getAppName()) +
                 "/" +
                 "issues" +
                 "/?targetBuild=" +
-                parameterResolver.get(fields.targetBuild) +
+                parameterResolver.get(fields.getTargetBuild()) +
                 "&defaultBaseline";
     }
 
@@ -155,7 +153,7 @@ class QRebelStepPerformer {
                         "Exceptions: %d <br/>" +
                         "Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
                         "For full report check your <a href= %s >dashboard</a>.<br/>",
-                qRData.getAppName(), parameterResolver.get(fields.baselineBuild), qRData.getDurationCount(), qRData.getIOCount(),
+                qRData.getAppName(), parameterResolver.get(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
                 qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData), qRData.getViewUrl()));
 
         return descriptionBuilder.toString();
