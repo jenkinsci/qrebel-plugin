@@ -10,7 +10,7 @@ import hudson.util.VariableResolver;
 
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
- *
+ * <p>
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
@@ -27,7 +27,7 @@ final class ParameterResolver {
   }
 
   static ParameterResolver make(Build build, TaskListener listener) throws IOException, InterruptedException {
-      return new ParameterResolver(build.getBuildVariableResolver(), build.getEnvironment(listener));
+    return new ParameterResolver(build.getBuildVariableResolver(), build.getEnvironment(listener));
   }
 
   String get(String name) {
@@ -42,7 +42,8 @@ final class ParameterResolver {
       if (resolvedValue.contains("$")) {
         //TODO Get the variable and query the value
         return get(resolvedValue);
-      } else {
+      }
+      else {
         return (String) resolvedParameter.get();
       }
     }
