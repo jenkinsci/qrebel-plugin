@@ -10,7 +10,6 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import jenkins.tasks.SimpleBuildStep;
 
-import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -25,8 +24,6 @@ import java.io.*;
  */
 
 public class QRebelBuilder extends Builder implements SimpleBuildStep {
-
-    private static final String QREBEL_URL = "https://hub.qrebel.com";
 
     private final String appName;
     private final String targetBuild;
@@ -53,7 +50,7 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
     }
 
     public String getServelUrl() {
-      return StringUtils.isBlank(serverUrl)? QREBEL_URL : serverUrl;
+      return serverUrl;
     }
 
     public String getApiKey() {
