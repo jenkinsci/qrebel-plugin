@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
@@ -113,6 +115,7 @@ class QRebelStepPerformer {
       HttpGet httpGet = new HttpGet(apiUrl);
       httpGet.setHeader("authorization", fields.getApiKey());
       try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+        checkHttpFailure(response);
         return EntityUtils.toString(response.getEntity());
       }
     }
@@ -126,9 +129,9 @@ class QRebelStepPerformer {
       if (StringUtils.isNotEmpty(fields.getBaselineBuild())) {
         httpPut.setEntity(new StringEntity("{ \"build\": \"" + fields.getBaselineBuild() + "\" }"));
       }
-      httpclient
-          .execute(httpPut)
-          .close();
+      try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
+        checkHttpFailure(response);
+      }
     }
   }
 
@@ -158,5 +161,12 @@ class QRebelStepPerformer {
         qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData), qRData.getViewUrl()));
 
     return descriptionBuilder.toString();
+  }
+
+  private void checkHttpFailure(HttpResponse response) {
+    int code = response.getStatusLine().getStatusCode();
+    if (code < HttpStatus.SC_OK || code > HttpStatus.SC_MULTI_STATUS) {
+      throw new IllegalStateException("Http request failed with status " + code);
+    }
   }
 }
