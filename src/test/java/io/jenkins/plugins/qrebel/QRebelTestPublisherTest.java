@@ -23,7 +23,6 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import hudson.EnvVars;
-import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 
@@ -44,27 +43,26 @@ public class QRebelTestPublisherTest {
 
   private static final int DURATION_FAIL = 0;
   private static final int IO_FAIL = 0;
-  private static final int EXCEPTIOB_FAIL = 0;
+  private static final int EXCEPTION_FAIL = 0;
   private static final int THRESHOLD = 100;
 
 
   @Test
   public void testFlow() throws Exception {
-    stubAuthApi(CORRECT_AUTH_KEY, forbidden());
+    stubAuthApi(CORRECT_AUTH_KEY, ok());
     stubIssuesApi(CORRECT_AUTH_KEY, TARGET_BUIKD, ok());
-    FreeStyleBuild build = j.buildAndAssertSuccess(makeProject(APP_NAME, TARGET_BUIKD, BASELINE_BUIKD, CORRECT_AUTH_KEY, wireMockRule.baseUrl(), DURATION_FAIL, IO_FAIL, EXCEPTIOB_FAIL, THRESHOLD));
-//    j.assertLogContains("!23", build);
-    verify(putRequestedFor(urlEqualTo("api/applications/" + APP_NAME + "/baselines/default/"))
+    j.buildAndAssertSuccess(makeProject(APP_NAME, TARGET_BUIKD, BASELINE_BUIKD, CORRECT_AUTH_KEY, wireMockRule.baseUrl(), DURATION_FAIL, IO_FAIL, EXCEPTION_FAIL, THRESHOLD));
+    verify(putRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/baselines/default/"))
         .withHeader("Content-Type", equalTo("application/json"))
         .withHeader("authorization", equalTo(CORRECT_AUTH_KEY))
     );
-    verify(getRequestedFor(urlEqualTo("api/applications/" + APP_NAME + "/issues/?targetBuild=" + TARGET_BUIKD + "&defaultBaseline"))
+    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + TARGET_BUIKD + "&defaultBaseline"))
         .withHeader("authorization", equalTo(CORRECT_AUTH_KEY))
     );
   }
 
   private void stubAuthApi(String authKey, ResponseDefinitionBuilder response) {
-    stubFor(put("api/applications/" + APP_NAME + "/baselines/default/")
+    stubFor(put("/api/applications/" + APP_NAME + "/baselines/default/")
         .withHeader("Content-Type", equalTo("application/json"))
         .withHeader("authorization", equalTo(authKey))
         .willReturn(response));
@@ -72,7 +70,7 @@ public class QRebelTestPublisherTest {
 
   private void stubIssuesApi(String authKey, String targetBuild, ResponseDefinitionBuilder response) throws IOException {
     String issuesJson = IOUtils.toString(this.getClass().getResourceAsStream("issues.json"));
-    stubFor(get("api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline")
+    stubFor(get("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline")
         .withHeader("authorization", equalTo(authKey))
         .willReturn(response.withBody(issuesJson)));
   }
