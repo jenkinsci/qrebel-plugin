@@ -12,7 +12,8 @@ import hudson.model.AbstractProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.Builder;
+import hudson.tasks.Publisher;
+import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
 
 /**
@@ -23,7 +24,7 @@ import jenkins.tasks.SimpleBuildStep;
  * for more information.
  */
 
-public class QRebelBuilder extends Builder implements SimpleBuildStep {
+public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   private final String appName;
   private final String targetBuild;
@@ -36,8 +37,8 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
   public int threshold;
 
   @DataBoundConstructor
-  public QRebelBuilder(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail,
-                       int ioFail, int exceptionFail, int threshold) {
+  public QRebelPublisher(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail,
+                         int ioFail, int exceptionFail, int threshold) {
     this.appName = appName;
     this.targetBuild = targetBuild;
     this.baselineBuild = baselineBuild;
@@ -77,7 +78,7 @@ public class QRebelBuilder extends Builder implements SimpleBuildStep {
 
   @Symbol("qrebel")
   @Extension
-  public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+  public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
     @Override
     public boolean isApplicable(Class<? extends AbstractProject> aClass) {
       return true;

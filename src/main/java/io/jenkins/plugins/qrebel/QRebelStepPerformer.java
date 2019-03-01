@@ -28,19 +28,19 @@ import hudson.model.TaskListener;
  */
 
 class QRebelStepPerformer {
-  private final QRebelBuilder fields;
+  private final QRebelPublisher fields;
   private final ParameterResolver parameterResolver;
   private final PrintStream logger;
   private final Run<?, ?> run;
 
-  private QRebelStepPerformer(QRebelBuilder fields, ParameterResolver parameterResolver, PrintStream logger, Run<?, ?> run) {
+  private QRebelStepPerformer(QRebelPublisher fields, ParameterResolver parameterResolver, PrintStream logger, Run<?, ?> run) {
     this.fields = fields;
     this.parameterResolver = parameterResolver;
     this.logger = logger;
     this.run = run;
   }
 
-  static QRebelStepPerformer make(QRebelBuilder stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
+  static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
     if (run instanceof Build) {
       return new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener), listener.getLogger(), run);
     }
