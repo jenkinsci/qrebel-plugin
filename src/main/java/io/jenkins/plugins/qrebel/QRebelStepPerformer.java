@@ -120,7 +120,7 @@ class QRebelStepPerformer {
 
   private void setRemoteBaseline() throws IOException {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      HttpPut httpPut = new HttpPut(fields.getServelUrl() + parameterResolver.get(fields.getAppName()) + "/baselines/default/");
+      HttpPut httpPut = new HttpPut(fields.getServelUrl() + "/api/applications/" +parameterResolver.get(fields.getAppName()) + "/baselines/default/");
       httpPut.setHeader("Content-Type", "application/json");
       httpPut.setHeader("authorization", fields.getApiKey());
       if (StringUtils.isNotEmpty(fields.getBaselineBuild())) {
@@ -134,6 +134,7 @@ class QRebelStepPerformer {
 
   private String buildApiUrl() {
     return fields.getServelUrl() +
+        "/api/applications/" +
         parameterResolver.get(fields.getAppName()) +
         "/" +
         "issues" +
