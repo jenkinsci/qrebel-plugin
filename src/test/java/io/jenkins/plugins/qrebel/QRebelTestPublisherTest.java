@@ -24,6 +24,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 
 import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
+import hudson.model.Result;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 public class QRebelTestPublisherTest {
@@ -36,29 +37,79 @@ public class QRebelTestPublisherTest {
   public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
 
   private static final String APP_NAME = "foo";
-  private static final String TARGET_BUIKD = "2.0.6RC3";
+  private static final String TARGET_BUILD = "2.0.6RC3";
   private static final String BASELINE_BUIKD = "2.05RC1";
 
-  private static final String CORRECT_AUTH_KEY = "correct-key";
+  private static final String AUTH_KEY = "correct-key";
 
-  private static final int DURATION_FAIL = 0;
-  private static final int IO_FAIL = 0;
-  private static final int EXCEPTION_FAIL = 0;
-  private static final int THRESHOLD = 100;
+  private static final int IGNORE_ALL_SLOW_REQUESTS = 15;
+  private static final int TOO_MANY_SLOW_REQUESTS = IGNORE_ALL_SLOW_REQUESTS - 1;
+  private static final int IGNORE_ALL_IO_ISSUES = 0;
+  private static final int IGNORE_ALL_EXCEPTIONS = 2;
+  private static final int TOO_MANY_EXCEPTIONS = IGNORE_ALL_EXCEPTIONS - 1;
+  private static final int FASTEST_REQUEST = 26;
+  private static final int SLOWEST_REQUEST = 3770;
+  private static final int THRESHOLD_BELOW_FASTEST = FASTEST_REQUEST - 1;
+  private static final int THRESHOLD_ABOVE_SLOWEST = SLOWEST_REQUEST + 1;
 
 
   @Test
-  public void testFlow() throws Exception {
-    stubAuthApi(CORRECT_AUTH_KEY, ok());
-    stubIssuesApi(CORRECT_AUTH_KEY, TARGET_BUIKD, ok());
-    j.buildAndAssertSuccess(makeProject(APP_NAME, TARGET_BUIKD, BASELINE_BUIKD, CORRECT_AUTH_KEY, wireMockRule.baseUrl(), DURATION_FAIL, IO_FAIL, EXCEPTION_FAIL, THRESHOLD));
-    verify(putRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/baselines/default/"))
-        .withHeader("Content-Type", equalTo("application/json"))
-        .withHeader("authorization", equalTo(CORRECT_AUTH_KEY))
-    );
-    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + TARGET_BUIKD + "&defaultBaseline"))
-        .withHeader("authorization", equalTo(CORRECT_AUTH_KEY))
-    );
+  public void authFailedOnBaseline() throws Exception {
+    stubAuthApi(AUTH_KEY, forbidden());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyBaselineCalled(AUTH_KEY);
+  }
+
+  @Test
+  public void authFailedOnIssues() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, forbidden());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyIssuesCalled(AUTH_KEY, TARGET_BUILD);
+  }
+
+  @Test
+  public void tooManySlowRequests() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+  }
+
+  @Test
+  public void tooManyExceptions() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+  }
+
+  @Test
+  public void thresholdBelowFastest() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
+  }
+
+  @Test
+  public void thresholdTouchesFastest() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
+  }
+
+  @Test
+  public void thresholdTouchesSlowest() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
+  }
+
+  @Test
+  public void thresholdAboveSlowest() throws Exception {
+    stubAuthApi(AUTH_KEY, ok());
+    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
+    j.buildAndAssertSuccess(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyBaselineCalled(AUTH_KEY);
+    verifyIssuesCalled(AUTH_KEY, TARGET_BUILD);
   }
 
   private void stubAuthApi(String authKey, ResponseDefinitionBuilder response) {
@@ -68,11 +119,24 @@ public class QRebelTestPublisherTest {
         .willReturn(response));
   }
 
+  private void verifyBaselineCalled(String authKey) {
+    verify(putRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/baselines/default/"))
+        .withHeader("Content-Type", equalTo("application/json"))
+        .withHeader("authorization", equalTo(authKey))
+    );
+  }
+
   private void stubIssuesApi(String authKey, String targetBuild, ResponseDefinitionBuilder response) throws IOException {
     String issuesJson = IOUtils.toString(this.getClass().getResourceAsStream("issues.json"));
     stubFor(get("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline")
         .withHeader("authorization", equalTo(authKey))
         .willReturn(response.withBody(issuesJson)));
+  }
+
+  private void verifyIssuesCalled(String authKey, String targetBuild) throws IOException {
+    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline"))
+        .withHeader("authorization", equalTo(authKey))
+    );
   }
 
   private void setEnvVariables(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) {
@@ -95,5 +159,9 @@ public class QRebelTestPublisherTest {
     FreeStyleProject project = j.createFreeStyleProject();
     project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, baselineBuild, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
     return project;
+  }
+
+  private void buildAndAssertFailure(FreeStyleProject project) throws Exception {
+    j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0));
   }
 }
