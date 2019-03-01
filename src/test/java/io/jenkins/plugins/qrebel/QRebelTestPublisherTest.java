@@ -13,10 +13,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
 import java.io.IOException;
 import org.apache.commons.io.IOUtils;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.jvnet.hudson.test.BuildWatcher;
 import org.jvnet.hudson.test.JenkinsRule;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
@@ -31,8 +29,6 @@ public class QRebelTestPublisherTest {
 
   @Rule
   public JenkinsRule j = new JenkinsRule();
-  @ClassRule
-  public static BuildWatcher bw = new BuildWatcher();
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
 
