@@ -27,6 +27,9 @@ import hudson.model.TaskListener;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
+ *
+ * Business logic for QRebelPublisher. A Jenkins build will me marked as failed if there are some issues detected by QRebel
+ * The issues are obtained via HTTP requests to the QRebel server. Some of them can be ignored depending on the plugin configuration.
  */
 
 class QRebelStepPerformer {
@@ -42,6 +45,7 @@ class QRebelStepPerformer {
     this.run = run;
   }
 
+  // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
     if (run instanceof Build) {
       return new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener), listener.getLogger(), run);
@@ -50,18 +54,19 @@ class QRebelStepPerformer {
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
   }
 
+  // the main flow
   void perform() throws IOException {
     logger.println("AppName" + fields.getAppName() + " resolveAppName " + parameterResolver.get(fields.getAppName()));
     logger.println("Baseline Build: " + fields.getBaselineBuild());
     logger.println("Target Build: " + fields.getTargetBuild() + " resolved: " + parameterResolver.get(fields.getTargetBuild()));
 
-    setRemoteBaseline();
+    String baselineApiUrl = getBaselineApiUrl();
+    logger.println("Setting baseline, URL " + baselineApiUrl);
+    setBaseline(baselineApiUrl);
 
-    logger.println("Going to perform QRebel API call..");
-    String apiUrl = buildApiUrl();
-    logger.println("Calling URL - " + apiUrl);
-    String issues = getIssuesJson(apiUrl);
-    QRebelData qRData = QRebelData.parse(issues);
+    String issuesApiUrl = getIssuesApiUrl();
+    logger.println("Retrieving issues list, URL " + issuesApiUrl);
+    QRebelData qRData = QRebelData.parse(getIssuesAsJson(issuesApiUrl));
 
     boolean failBuild = qRData.getDurationCount() > fields.durationFail
         || qRData.getIOCount() > fields.ioFail
@@ -78,12 +83,13 @@ class QRebelStepPerformer {
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
               " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData)));
+          qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData)));
 
       logger.println("For more detail check your <a href=\"" + qRData.getViewUrl() + "/\">dashboard</a>");
     }
   }
 
+  // check if found issues are too slow
   private boolean isThresholdProvidedAndExceeded(QRebelData qRData) {
     Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
     if (!entryPointTimes.isPresent()) {
@@ -97,7 +103,7 @@ class QRebelStepPerformer {
     return false;
   }
 
-  private int maximumDelay(QRebelData qRData) {
+  private int getSlowestDelay(QRebelData qRData) {
     Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
     if (!entryPointTimes.isPresent()) {
       return 0;
@@ -110,20 +116,10 @@ class QRebelStepPerformer {
     return 0;
   }
 
-  private String getIssuesJson(String apiUrl) throws IOException {
+  // call remote API to set Baseline
+  private void setBaseline(String baselineApiUrl) throws IOException {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      HttpGet httpGet = new HttpGet(apiUrl);
-      httpGet.setHeader("authorization", fields.getApiKey());
-      try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
-        checkHttpFailure(response);
-        return EntityUtils.toString(response.getEntity());
-      }
-    }
-  }
-
-  private void setRemoteBaseline() throws IOException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      HttpPut httpPut = new HttpPut(fields.getServelUrl() + "/api/applications/" +parameterResolver.get(fields.getAppName()) + "/baselines/default/");
+      HttpPut httpPut = new HttpPut(baselineApiUrl);
       httpPut.setHeader("Content-Type", "application/json");
       httpPut.setHeader("authorization", fields.getApiKey());
       if (StringUtils.isNotEmpty(fields.getBaselineBuild())) {
@@ -135,20 +131,45 @@ class QRebelStepPerformer {
     }
   }
 
-  private String buildApiUrl() {
-    return fields.getServelUrl() +
-        "/api/applications/" +
-        parameterResolver.get(fields.getAppName()) +
-        "/" +
-        "issues" +
-        "/?targetBuild=" +
-        parameterResolver.get(fields.getTargetBuild()) +
-        "&defaultBaseline";
+  // call remote API to get issues
+  private String getIssuesAsJson(String apiUrl) throws IOException {
+    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+      HttpGet httpGet = new HttpGet(apiUrl);
+      httpGet.setHeader("authorization", fields.getApiKey());
+      try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
+        checkHttpFailure(response);
+        return EntityUtils.toString(response.getEntity());
+      }
+    }
   }
 
+  private String getBaselineApiUrl() {
+    return fields.getServelUrl()
+        + "/api/applications/"
+        + parameterResolver.get(fields.getAppName())
+        + "/baselines/default/";
+  }
+
+  private String getIssuesApiUrl() {
+    return fields.getServelUrl() + "/api/applications/"
+        + parameterResolver.get(fields.getAppName())
+        + "/issues/?targetBuild="
+        + parameterResolver.get(fields.getTargetBuild())
+        + "&defaultBaseline";
+  }
+
+  // throw IllegalStateException if HTTP Request status is not OK
+  private void checkHttpFailure(HttpResponse response) {
+    int code = response.getStatusLine().getStatusCode();
+    if (code < HttpStatus.SC_OK || code > HttpStatus.SC_MULTI_STATUS) {
+      throw new IllegalStateException("Http request failed with status " + code);
+    }
+  }
+
+  // describe failure reason
   private String getFailureDescription(QRebelData qRData, String buildDescription) {
     StringBuilder descriptionBuilder = new StringBuilder();
-    if (buildDescription != null && buildDescription.length() > 0) {
+    if (StringUtils.isNotEmpty(buildDescription)) {
       descriptionBuilder.append(buildDescription);
     }
     descriptionBuilder.append(String.format("Failing build due to performance regressions found in %s compared to %s. <br/>" +
@@ -158,15 +179,8 @@ class QRebelStepPerformer {
             "Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
             "For full report check your <a href= %s >dashboard</a>.<br/>",
         qRData.getAppName(), parameterResolver.get(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
-        qRData.getExceptionCount(), fields.threshold, maximumDelay(qRData), qRData.getViewUrl()));
+        qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData), qRData.getViewUrl()));
 
     return descriptionBuilder.toString();
-  }
-
-  private void checkHttpFailure(HttpResponse response) {
-    int code = response.getStatusLine().getStatusCode();
-    if (code < HttpStatus.SC_OK || code > HttpStatus.SC_MULTI_STATUS) {
-      throw new IllegalStateException("Http request failed with status " + code);
-    }
   }
 }

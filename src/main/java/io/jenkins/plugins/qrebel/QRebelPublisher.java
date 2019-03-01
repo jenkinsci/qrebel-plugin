@@ -22,6 +22,9 @@ import jenkins.tasks.SimpleBuildStep;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
+ *
+ * Post-build step that keeps configuration. It can be persisted by XStream, so all the non-serializable fields are
+ * kept in QRebelStepPerformer.
  */
 
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {

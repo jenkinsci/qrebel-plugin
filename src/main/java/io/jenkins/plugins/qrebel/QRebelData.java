@@ -13,6 +13,8 @@ import org.json.simple.JSONValue;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
+ *
+ * Issues data parsed from JSON
  */
 
 public class QRebelData {
@@ -81,14 +83,6 @@ public class QRebelData {
     }
 
     return Optional.empty();
-  }
-
-  public Optional<List<String>> getEntryPointNames() {
-    List<String> entryPointNames = (List<String>) entryPoints.stream()
-        .map(e -> ((JSONObject) e).get("name"))
-        .collect(Collectors.toList());
-
-    return Optional.of(entryPointNames);
   }
 
   private Long parseIssueCount(String name) {

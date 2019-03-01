@@ -14,6 +14,8 @@ import hudson.util.VariableResolver;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
+ *
+ * Retrieve parameter values from system variables
  */
 
 final class ParameterResolver {
