@@ -13,5 +13,5 @@ Add a new post-build action `Monitor performance with QRebel`. This action will 
 * Specify `Baseline build` - the initial build to compare your app performance with. Usually static. Eg. `1.4.rc1` If not specified,, the comparison is performed against the static threshold.
 * Provide `QRebel ApiKey` - REST API authentication token, see [REST API](https://manuals.zeroturnaround.com/qrebel/api/index.html) for detail
 
-If a build fails than to its description will be added the reason eg. `Failing build due to performance regressions found in foo compared to 1.4.0rc1. Slow Requests:...`. There will also appear a link to the QRebel dashboard in logs, eg. `For more detail check your <a href="https://hub.qrebel.com/#/12345/app/petclinic?baseline=1.4.0rc1&target=1.4.0rc2/">dashboard</a>`
+If a build fails than to its description will be added the reason eg. `Failing build due to performance regressions found in petclinic compared to 1.4.0rc1. Slow Requests:...`. There will also appear a link to the QRebel dashboard in logs, eg. `For more detail check your <a href="https://hub.qrebel.com/#/12345/app/petclinic?baseline=1.4.0rc1&target=1.4.0rc2/">dashboard</a>`
  
