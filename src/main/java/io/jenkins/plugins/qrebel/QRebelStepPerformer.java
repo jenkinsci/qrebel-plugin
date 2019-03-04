@@ -11,10 +11,13 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.jenkinsci.lib.envinject.EnvInjectException;
+import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 
 import hudson.model.Build;
 import hudson.model.Result;
@@ -28,27 +31,25 @@ import hudson.model.TaskListener;
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  *
- * Business logic for QRebelPublisher. A Jenkins build will me marked as failed if there are some issues detected by QRebel
+ * Business logic for QRebelPublisher. A Jenkins build will be marked as failed if there are some issues detected by QRebel
  * The issues are obtained via HTTP requests to the QRebel server. Some of them can be ignored depending on the plugin configuration.
  */
 
 class QRebelStepPerformer {
   private final QRebelPublisher fields;
-  private final ParameterResolver parameterResolver;
   private final PrintStream logger;
   private final Run<?, ?> run;
 
-  private QRebelStepPerformer(QRebelPublisher fields, ParameterResolver parameterResolver, PrintStream logger, Run<?, ?> run) {
+  private QRebelStepPerformer(QRebelPublisher fields, PrintStream logger, Run<?, ?> run) {
     this.fields = fields;
-    this.parameterResolver = parameterResolver;
     this.logger = logger;
     this.run = run;
   }
 
   // build a new class instance
-  static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) throws IOException, InterruptedException {
+  static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
     if (run instanceof Build) {
-      return new QRebelStepPerformer(stepFields, ParameterResolver.make((Build) run, listener), listener.getLogger(), run);
+      return new QRebelStepPerformer(stepFields, listener.getLogger(), run);
     }
 
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
@@ -56,9 +57,9 @@ class QRebelStepPerformer {
 
   // the main flow
   void perform() throws IOException {
-    logger.println("AppName" + fields.getAppName() + " resolveAppName " + parameterResolver.get(fields.getAppName()));
-    logger.println("Baseline Build: " + fields.getBaselineBuild());
-    logger.println("Target Build: " + fields.getTargetBuild() + " resolved: " + parameterResolver.get(fields.getTargetBuild()));
+    logger.println("AppName" + fields.getAppName() + " resolveAppName " + resolveEnvVars(fields.getAppName()));
+    logger.println("Baseline Build: " + fields.getBaselineBuild() + " resolved: " + resolveEnvVars(fields.getBaselineBuild()));
+    logger.println("Target Build: " + fields.getTargetBuild() + " resolved: " + resolveEnvVars(fields.getTargetBuild()));
 
     String baselineApiUrl = getBaselineApiUrl();
     logger.println("Setting baseline, URL " + baselineApiUrl);
@@ -122,8 +123,9 @@ class QRebelStepPerformer {
       HttpPut httpPut = new HttpPut(baselineApiUrl);
       httpPut.setHeader("Content-Type", "application/json");
       httpPut.setHeader("authorization", fields.getApiKey());
-      if (StringUtils.isNotEmpty(fields.getBaselineBuild())) {
-        httpPut.setEntity(new StringEntity("{ \"build\": \"" + fields.getBaselineBuild() + "\" }"));
+      String baselineBuild = resolveEnvVars(fields.getBaselineBuild());
+      if (StringUtils.isNotEmpty(baselineBuild)) {
+        httpPut.setEntity(new StringEntity("{ \"build\": \"" + baselineBuild + "\" }", ContentType.APPLICATION_JSON));
       }
       try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
         checkHttpFailure(response);
@@ -146,15 +148,15 @@ class QRebelStepPerformer {
   private String getBaselineApiUrl() {
     return fields.getServelUrl()
         + "/api/applications/"
-        + parameterResolver.get(fields.getAppName())
+        + resolveEnvVars(fields.getAppName())
         + "/baselines/default/";
   }
 
   private String getIssuesApiUrl() {
     return fields.getServelUrl() + "/api/applications/"
-        + parameterResolver.get(fields.getAppName())
+        + resolveEnvVars(fields.getAppName())
         + "/issues/?targetBuild="
-        + parameterResolver.get(fields.getTargetBuild())
+        + resolveEnvVars(fields.getTargetBuild())
         + "&defaultBaseline";
   }
 
@@ -178,9 +180,18 @@ class QRebelStepPerformer {
             "Exceptions: %d <br/>" +
             "Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
             "For full report check your <a href= %s >dashboard</a>.<br/>",
-        qRData.getAppName(), parameterResolver.get(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
+        qRData.getAppName(), resolveEnvVars(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
         qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData), qRData.getViewUrl()));
 
     return descriptionBuilder.toString();
+  }
+
+  private String resolveEnvVars(String value) {
+    try {
+      return EnvVarsResolver.resolveEnvVars(run, value);
+    }
+    catch (EnvInjectException e) {
+      throw new IllegalStateException("Unable to get Env Variable " + value, e);
+    }
   }
 }
