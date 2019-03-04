@@ -20,7 +20,6 @@
     <version>3.37</version>
     <relativePath/>
   </parent>
-  <groupId>io.jenkins.plugins</groupId>
   <artifactId>qrebel</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>hpi</packaging>
@@ -35,6 +34,7 @@
     <license>
       <name>MIT License</name>
       <url>https://opensource.org/licenses/MIT</url>
+      <comments>All source code is under the MIT license.</comments>
     </license>
   </licenses>
   <dependencies>
