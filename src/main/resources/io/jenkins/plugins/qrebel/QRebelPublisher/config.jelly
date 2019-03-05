@@ -37,7 +37,7 @@
         </f:block>
         <f:block>
             <f:entry title="${%ServerUrl}" field="serverUrl">
-                <f:textbox default="https//hub.qrebel.com" />
+                <f:textbox default="https://hub.qrebel.com" />
             </f:entry>
         </f:block>
     </f:advanced>
