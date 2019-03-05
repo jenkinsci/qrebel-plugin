@@ -19,7 +19,12 @@
 
     <f:advanced>
         <f:block>
-            <b>Issues count settings</b>
+            <f:entry title="${%ServerUrl}" field="serverUrl">
+                <f:textbox default="https://hub.qrebel.com" />
+            </f:entry>
+        </f:block>
+        <f:block>
+            <b>Performance Gate Settings</b>
             <f:entry title="${%DurationFail}" field="durationFail">
                 <f:number clazz="number" default="0"/>
             </f:entry>
@@ -33,11 +38,6 @@
         <f:block>
             <f:entry title="${%Threshold}" field="threshold">
                 <f:number clazz="number" default="0"/>
-            </f:entry>
-        </f:block>
-        <f:block>
-            <f:entry title="${%ServerUrl}" field="serverUrl">
-                <f:textbox default="https://hub.qrebel.com" />
             </f:entry>
         </f:block>
     </f:advanced>
