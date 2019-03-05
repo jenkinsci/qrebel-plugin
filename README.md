@@ -19,7 +19,7 @@ Failing build due to performance regressions found in petclinic compared to 1.4.
 Slow Requests: 15
 Excessive IO: 0
 Exceptions: 2 
-Threshold limit(ms): 3770 ms | slowest endpoint time(ms): 3770 ms
+SLA global limit (ms): 3770 ms | slowest endpoint time(ms): 3770 ms
 For full report check your <a href="https://hub.qrebel.com/#/12345/petclinic/?baseline=1.4.0rc1&target=1.4.0rc2">dashboard</a>
 ```
 More detail will appear if you click on `Dashboard`

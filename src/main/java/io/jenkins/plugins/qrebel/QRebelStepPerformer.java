@@ -83,7 +83,7 @@ class QRebelStepPerformer {
       logger.println(String.format("Slow Requests: %d%n" +
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
-              " Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms",
+              " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
           qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData)));
 
       logger.println("For more detail check your <a href=\"" + qRData.getViewUrl() + "/\">dashboard</a>");
@@ -178,7 +178,7 @@ class QRebelStepPerformer {
             "Slow Requests: %d <br/>" +
             "Excessive IO: %d <br/>" +
             "Exceptions: %d <br/>" +
-            "Threshold limit(ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
+            "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
             "For full report check your <a href= %s >dashboard</a>.<br/>",
         qRData.getAppName(), resolveEnvVars(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
         qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData), qRData.getViewUrl()));
