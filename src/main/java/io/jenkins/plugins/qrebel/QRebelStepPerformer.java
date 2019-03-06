@@ -18,11 +18,14 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
+import com.google.gson.Gson;
 
 import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.qrebel.model.Issues;
+import lombok.Value;
 
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
@@ -30,21 +33,17 @@ import hudson.model.TaskListener;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
- *
+ * <p>
  * Business logic for QRebelPublisher. A Jenkins build will be marked as failed if there are some issues detected by QRebel
  * The issues are obtained via HTTP requests to the QRebel server. Some of them can be ignored depending on the plugin configuration.
  */
 
+@Value
 class QRebelStepPerformer {
   private final QRebelPublisher fields;
   private final PrintStream logger;
   private final Run<?, ?> run;
-
-  private QRebelStepPerformer(QRebelPublisher fields, PrintStream logger, Run<?, ?> run) {
-    this.fields = fields;
-    this.logger = logger;
-    this.run = run;
-  }
+  private final Gson gson = new Gson();
 
   // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
@@ -58,8 +57,8 @@ class QRebelStepPerformer {
   // the main flow
   void perform() throws IOException {
     logger.println("AppName" + fields.getAppName() + " resolveAppName " + resolveEnvVars(fields.getAppName()));
-    logger.println("Baseline Build: " + fields.getBaselineBuild() + " resolved: " + resolveEnvVars(fields.getBaselineBuild()));
-    logger.println("Target Build: " + fields.getTargetBuild() + " resolved: " + resolveEnvVars(fields.getTargetBuild()));
+    logger.println("Baseline Build: " + fields.getBaselineBuildName() + " resolved: " + resolveEnvVars(fields.getBaselineBuildName()));
+    logger.println("Target Build: " + fields.getTargetBuildName() + " resolved: " + resolveEnvVars(fields.getTargetBuildName()));
 
     String baselineApiUrl = getBaselineApiUrl();
     logger.println("Setting baseline, URL " + baselineApiUrl);
@@ -67,11 +66,11 @@ class QRebelStepPerformer {
 
     String issuesApiUrl = getIssuesApiUrl();
     logger.println("Retrieving issues list, URL " + issuesApiUrl);
-    QRebelData qRData = QRebelData.parse(getIssuesAsJson(issuesApiUrl));
+    Issues qRData = gson.fromJson(getIssuesAsJson(issuesApiUrl), Issues.class);
 
-    boolean failBuild = qRData.getDurationCount() > fields.durationFail
-        || qRData.getIOCount() > fields.ioFail
-        || qRData.getExceptionCount() > fields.exceptionFail
+    boolean failBuild = qRData.getIssuesCount().getDURATION() > fields.getDurationFail()
+        || qRData.getIssuesCount().getIO() > fields.getIoFail()
+        || qRData.getIssuesCount().getEXCEPTIONS() > fields.getExceptionFail()
         || isThresholdProvidedAndExceeded(qRData);
 
     if (failBuild) {
@@ -84,14 +83,14 @@ class QRebelStepPerformer {
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
               " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.getDurationCount(), qRData.getIOCount(), qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData)));
+          qRData.getIssuesCount().getDURATION(), qRData.getIssuesCount().getIO(), qRData.getIssuesCount().getEXCEPTIONS(), fields.getThreshold(), getSlowestDelay(qRData)));
 
-      logger.println("For more detail check your <a href=\"" + qRData.getViewUrl() + "/\">dashboard</a>");
+      logger.println("For more detail check your <a href=\"" + qRData.getAppViewUrl() + "/\">dashboard</a>");
     }
   }
 
   // check if found issues are too slow
-  private boolean isThresholdProvidedAndExceeded(QRebelData qRData) {
+  private boolean isThresholdProvidedAndExceeded(Issues qRData) {
     Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
     if (!entryPointTimes.isPresent()) {
       return false;
@@ -99,12 +98,12 @@ class QRebelStepPerformer {
 
     OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
     if (maxDelayTime.isPresent()) {
-      return fields.threshold > 0 && fields.threshold <= (int) maxDelayTime.getAsLong();
+      return fields.getThreshold() > 0 && fields.getThreshold() <= (int) maxDelayTime.getAsLong();
     }
     return false;
   }
 
-  private int getSlowestDelay(QRebelData qRData) {
+  private int getSlowestDelay(Issues qRData) {
     Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
     if (!entryPointTimes.isPresent()) {
       return 0;
@@ -123,7 +122,7 @@ class QRebelStepPerformer {
       HttpPut httpPut = new HttpPut(baselineApiUrl);
       httpPut.setHeader("Content-Type", "application/json");
       httpPut.setHeader("authorization", fields.getApiKey());
-      String baselineBuild = resolveEnvVars(fields.getBaselineBuild());
+      String baselineBuild = resolveEnvVars(fields.getBaselineBuildName());
       if (StringUtils.isNotEmpty(baselineBuild)) {
         httpPut.setEntity(new StringEntity("{ \"build\": \"" + baselineBuild + "\" }", ContentType.APPLICATION_JSON));
       }
@@ -146,17 +145,17 @@ class QRebelStepPerformer {
   }
 
   private String getBaselineApiUrl() {
-    return fields.getServelUrl()
+    return fields.getServerUrl()
         + "/api/applications/"
         + resolveEnvVars(fields.getAppName())
         + "/baselines/default/";
   }
 
   private String getIssuesApiUrl() {
-    return fields.getServelUrl() + "/api/applications/"
+    return fields.getServerUrl() + "/api/applications/"
         + resolveEnvVars(fields.getAppName())
         + "/issues/?targetBuild="
-        + resolveEnvVars(fields.getTargetBuild())
+        + resolveEnvVars(fields.getTargetBuildName())
         + "&defaultBaseline";
   }
 
@@ -169,7 +168,7 @@ class QRebelStepPerformer {
   }
 
   // describe failure reason
-  private String getFailureDescription(QRebelData qRData, String buildDescription) {
+  private String getFailureDescription(Issues qRData, String buildDescription) {
     StringBuilder descriptionBuilder = new StringBuilder();
     if (StringUtils.isNotEmpty(buildDescription)) {
       descriptionBuilder.append(buildDescription);
@@ -180,8 +179,9 @@ class QRebelStepPerformer {
             "Exceptions: %d <br/>" +
             "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
             "For full report check your <a href= %s >dashboard</a>.<br/>",
-        qRData.getAppName(), resolveEnvVars(fields.getBaselineBuild()), qRData.getDurationCount(), qRData.getIOCount(),
-        qRData.getExceptionCount(), fields.threshold, getSlowestDelay(qRData), qRData.getViewUrl()));
+        qRData.getAppName(), resolveEnvVars(fields.getBaselineBuildName()), qRData.getIssuesCount().getDURATION(),
+        qRData.getIssuesCount().getIO(), qRData.getIssuesCount().getEXCEPTIONS(),
+        fields.getThreshold(), getSlowestDelay(qRData), qRData.getAppViewUrl()));
 
     return descriptionBuilder.toString();
   }

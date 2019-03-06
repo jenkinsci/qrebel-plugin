@@ -1,7 +1,13 @@
 {
   "appName": "foo",
-  "target": "2.0.6RC3",
-  "baseline": "2.05RC1",
+  "target": {
+    "name": "2.0.6RC3",
+    "version": "can-be-nullable"
+  },
+  "baseline": {
+    "name": "2.0.6RC1",
+    "version": "can-be-nullable"
+  },
   "issuesCount": {
     "DURATION": 15,
     "EXCEPTIONS": 2

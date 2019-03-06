@@ -129,7 +129,7 @@ public class QRebelTestPublisherTest {
         .willReturn(response.withBody(issuesJson)));
   }
 
-  private void verifyIssuesCalled(String authKey, String targetBuild) throws IOException {
+  private void verifyIssuesCalled(String authKey, String targetBuild) {
     verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline"))
         .withHeader("authorization", equalTo(authKey))
     );
@@ -153,7 +153,7 @@ public class QRebelTestPublisherTest {
   private FreeStyleProject makeProject(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) throws IOException {
     setEnvVariables(appName, targetBuild, baselineBuild, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold);
     FreeStyleProject project = j.createFreeStyleProject();
-    project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, baselineBuild, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
+    project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, null, baselineBuild, null, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
     return project;
   }
 

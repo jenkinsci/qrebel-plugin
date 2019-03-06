@@ -6,23 +6,36 @@
         <f:textbox/>
     </f:entry>
 
-    <f:entry title="${%TargetBuild}" field="targetBuild">
-        <f:textbox/>
-    </f:entry>
-    <f:entry title="${%BaselineBuild}" field="baselineBuild">
-        <f:textbox/>
-    </f:entry>
+    <f:block>
+        <b>Target build</b>
+        <f:entry title="${%BuildName}" field="targetBuildName" mandatory="true">
+            <f:textbox/>
+        </f:entry>
+        <f:entry title="${%BuildVersion}" field="targetBuildVersion">
+            <f:textbox/>
+        </f:entry>
+    </f:block>
 
-    <f:entry title="${%Apikey}" field="apiKey">
-        <f:password field="apiKey"/>
-    </f:entry>
+    <f:block>
+        <b>Baseline build</b>
+        <f:entry title="${%BuildName}" field="baselineBuildName" mandatory="true">
+            <f:textbox/>
+        </f:entry>
+        <f:entry title="${%BuildVersion}" field="baselineBuildVersion">
+            <f:textbox/>
+        </f:entry>
+    </f:block>
+
+    <f:block>
+        <f:entry title="${%Apikey}" field="apiKey">
+            <f:password field="apiKey"/>
+        </f:entry>
+        <f:entry title="${%ServerUrl}" field="serverUrl">
+            <f:textbox default="https://hub.qrebel.com" />
+        </f:entry>
+    </f:block>
 
     <f:advanced>
-        <f:block>
-            <f:entry title="${%ServerUrl}" field="serverUrl">
-                <f:textbox default="https://hub.qrebel.com" />
-            </f:entry>
-        </f:block>
         <f:block>
             <b>Performance Gate Settings</b>
             <f:entry title="${%DurationFail}" field="durationFail">

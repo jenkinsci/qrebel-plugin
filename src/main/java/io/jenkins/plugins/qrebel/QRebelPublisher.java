@@ -15,6 +15,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
+import lombok.EqualsAndHashCode;
+import lombok.Value;
 
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
@@ -22,29 +24,34 @@ import jenkins.tasks.SimpleBuildStep;
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
- *
+ * <p>
  * Post-build step that keeps configuration. It can be persisted by XStream, so all the non-serializable fields are
  * kept in QRebelStepPerformer.
  */
-
+@Value
+@EqualsAndHashCode(callSuper=true)
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   private final String appName;
-  private final String targetBuild;
-  private final String baselineBuild;
+  private final String targetBuildName;
+  private final String targetBuildVersion;
+  private final String baselineBuildName;
+  private final String baselineBuildVersion;
   private final String apiKey;
   private final String serverUrl;
-  public int durationFail;
-  public int ioFail;
-  public int exceptionFail;
-  public int threshold;
+  private final int durationFail;
+  private final int ioFail;
+  private final int exceptionFail;
+  private final int threshold;
 
   @DataBoundConstructor
-  public QRebelPublisher(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail,
+  public QRebelPublisher(String appName, String targetBuildName, String targetBuildVersion, String baselineBuildName, String baselineBuildVersion, String apiKey, String serverUrl, int durationFail,
                          int ioFail, int exceptionFail, int threshold) {
     this.appName = appName;
-    this.targetBuild = targetBuild;
-    this.baselineBuild = baselineBuild;
+    this.targetBuildName = targetBuildName;
+    this.targetBuildVersion = targetBuildVersion;
+    this.baselineBuildName = baselineBuildName;
+    this.baselineBuildVersion = baselineBuildVersion;
     this.apiKey = apiKey;
     this.serverUrl = serverUrl;
     this.durationFail = durationFail;
@@ -53,28 +60,8 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     this.threshold = threshold;
   }
 
-  public String getServelUrl() {
-    return serverUrl;
-  }
-
-  public String getApiKey() {
-    return apiKey;
-  }
-
-  public String getAppName() {
-    return appName;
-  }
-
-  public String getTargetBuild() {
-    return targetBuild;
-  }
-
-  public String getBaselineBuild() {
-    return baselineBuild;
-  }
-
   @Override
-  public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException, InterruptedException {
+  public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
     QRebelStepPerformer logic = QRebelStepPerformer.make(this, run, listener);
     logic.perform();
   }
