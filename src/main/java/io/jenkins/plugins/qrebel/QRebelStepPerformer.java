@@ -24,7 +24,6 @@ import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import io.jenkins.plugins.qrebel.model.Issues;
 import lombok.Value;
 
 /**
@@ -40,7 +39,7 @@ import lombok.Value;
 
 @Value
 class QRebelStepPerformer {
-  private final QRebelPublisher fields;
+  private final Fields fields;
   private final PrintStream logger;
   private final Run<?, ?> run;
   private final Gson gson = new Gson();
@@ -48,7 +47,7 @@ class QRebelStepPerformer {
   // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
     if (run instanceof Build) {
-      return new QRebelStepPerformer(stepFields, listener.getLogger(), run);
+      return new QRebelStepPerformer(resolveFields(stepFields, run), listener.getLogger(), run);
     }
 
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
@@ -56,9 +55,11 @@ class QRebelStepPerformer {
 
   // the main flow
   void perform() throws IOException {
-    logger.println("AppName" + fields.getAppName() + " resolveAppName " + resolveEnvVars(fields.getAppName()));
-    logger.println("Baseline Build: " + fields.getBaselineBuildName() + " resolved: " + resolveEnvVars(fields.getBaselineBuildName()));
-    logger.println("Target Build: " + fields.getTargetBuildName() + " resolved: " + resolveEnvVars(fields.getTargetBuildName()));
+    logger.println("AppName: " + fields.appName);
+    logger.println("Baseline Build: " + fields.baselineBuild);
+    logger.println("Baseline Version: " + fields.baselineVersion);
+    logger.println("Target Build: " + fields.targetBuild);
+    logger.println("Target Version: " + fields.targetVersion);
 
     String baselineApiUrl = getBaselineApiUrl();
     logger.println("Setting baseline, URL " + baselineApiUrl);
@@ -66,11 +67,11 @@ class QRebelStepPerformer {
 
     String issuesApiUrl = getIssuesApiUrl();
     logger.println("Retrieving issues list, URL " + issuesApiUrl);
-    Issues qRData = gson.fromJson(getIssuesAsJson(issuesApiUrl), Issues.class);
+    Issues qRData = getIssues(issuesApiUrl);
 
-    boolean failBuild = qRData.getIssuesCount().getDURATION() > fields.getDurationFail()
-        || qRData.getIssuesCount().getIO() > fields.getIoFail()
-        || qRData.getIssuesCount().getEXCEPTIONS() > fields.getExceptionFail()
+    boolean failBuild = qRData.issuesCount.DURATION > fields.durationFail
+        || qRData.issuesCount.IO > fields.ioFail
+        || qRData.issuesCount.EXCEPTIONS > fields.exceptionFail
         || isThresholdProvidedAndExceeded(qRData);
 
     if (failBuild) {
@@ -83,9 +84,9 @@ class QRebelStepPerformer {
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
               " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.getIssuesCount().getDURATION(), qRData.getIssuesCount().getIO(), qRData.getIssuesCount().getEXCEPTIONS(), fields.getThreshold(), getSlowestDelay(qRData)));
+          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, getSlowestDelay(qRData)));
 
-      logger.println("For more detail check your <a href=\"" + qRData.getAppViewUrl() + "/\">dashboard</a>");
+      logger.println("For more detail check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
     }
   }
 
@@ -98,7 +99,7 @@ class QRebelStepPerformer {
 
     OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
     if (maxDelayTime.isPresent()) {
-      return fields.getThreshold() > 0 && fields.getThreshold() <= (int) maxDelayTime.getAsLong();
+      return fields.threshold > 0 && fields.threshold <= (int) maxDelayTime.getAsLong();
     }
     return false;
   }
@@ -121,11 +122,9 @@ class QRebelStepPerformer {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
       HttpPut httpPut = new HttpPut(baselineApiUrl);
       httpPut.setHeader("Content-Type", "application/json");
-      httpPut.setHeader("authorization", fields.getApiKey());
-      String baselineBuild = resolveEnvVars(fields.getBaselineBuildName());
-      if (StringUtils.isNotEmpty(baselineBuild)) {
-        httpPut.setEntity(new StringEntity("{ \"build\": \"" + baselineBuild + "\" }", ContentType.APPLICATION_JSON));
-      }
+      httpPut.setHeader("authorization", fields.apiKey);
+      String json = gson.toJson(new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
+      httpPut.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
       try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
         checkHttpFailure(response);
       }
@@ -133,29 +132,31 @@ class QRebelStepPerformer {
   }
 
   // call remote API to get issues
-  private String getIssuesAsJson(String apiUrl) throws IOException {
+  private Issues getIssues(String apiUrl) throws IOException {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
       HttpGet httpGet = new HttpGet(apiUrl);
-      httpGet.setHeader("authorization", fields.getApiKey());
+      httpGet.setHeader("authorization", fields.apiKey);
       try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
         checkHttpFailure(response);
-        return EntityUtils.toString(response.getEntity());
+        return gson.fromJson(EntityUtils.toString(response.getEntity()), Issues.class);
       }
     }
   }
 
   private String getBaselineApiUrl() {
-    return fields.getServerUrl()
+    return fields.serverUrl
         + "/api/applications/"
-        + resolveEnvVars(fields.getAppName())
+        + fields.appName
         + "/baselines/default/";
   }
 
   private String getIssuesApiUrl() {
-    return fields.getServerUrl() + "/api/applications/"
-        + resolveEnvVars(fields.getAppName())
+    return fields.serverUrl + "/api/applications/"
+        + fields.appName
         + "/issues/?targetBuild="
-        + resolveEnvVars(fields.getTargetBuildName())
+        + fields.targetBuild
+        + "&targetVersion="
+        + fields.targetVersion
         + "&defaultBaseline";
   }
 
@@ -173,22 +174,39 @@ class QRebelStepPerformer {
     if (StringUtils.isNotEmpty(buildDescription)) {
       descriptionBuilder.append(buildDescription);
     }
-    descriptionBuilder.append(String.format("Failing build due to performance regressions found in %s compared to %s. <br/>" +
+    descriptionBuilder.append(String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>" +
             "Slow Requests: %d <br/>" +
             "Excessive IO: %d <br/>" +
             "Exceptions: %d <br/>" +
             "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
             "For full report check your <a href= %s >dashboard</a>.<br/>",
-        qRData.getAppName(), resolveEnvVars(fields.getBaselineBuildName()), qRData.getIssuesCount().getDURATION(),
-        qRData.getIssuesCount().getIO(), qRData.getIssuesCount().getEXCEPTIONS(),
-        fields.getThreshold(), getSlowestDelay(qRData), qRData.getAppViewUrl()));
+        qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
+        qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
+        fields.threshold, getSlowestDelay(qRData), qRData.appViewUrl));
 
     return descriptionBuilder.toString();
   }
 
-  private String resolveEnvVars(String value) {
+  private static Fields resolveFields(QRebelPublisher fields, Run<?, ?> run) {
+    return Fields.builder()
+        .apiKey(resolveEnvVarFromRun(fields.apiKey, run))
+        .appName(resolveEnvVarFromRun(fields.appName, run))
+        .baselineBuild(resolveEnvVarFromRun(fields.baselineBuild, run))
+        .baselineVersion(resolveEnvVarFromRun(fields.baselineVersion, run))
+        .targetBuild(resolveEnvVarFromRun(fields.targetBuild, run))
+        .targetVersion(resolveEnvVarFromRun(fields.targetVersion, run))
+        .serverUrl(resolveEnvVarFromRun(fields.serverUrl, run))
+        .durationFail(fields.durationFail)
+        .exceptionFail(fields.exceptionFail)
+        .ioFail(fields.ioFail)
+        .threshold(fields.threshold)
+        .build();
+  }
+
+  private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
     try {
-      return EnvVarsResolver.resolveEnvVars(run, value);
+      String resolved = EnvVarsResolver.resolveEnvVars(run, value);
+      return resolved == null? "" : resolved;
     }
     catch (EnvInjectException e) {
       throw new IllegalStateException("Unable to get Env Variable " + value, e);

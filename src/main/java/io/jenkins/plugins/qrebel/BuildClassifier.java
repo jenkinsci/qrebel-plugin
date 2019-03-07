@@ -1,6 +1,6 @@
-package io.jenkins.plugins.qrebel.model;
+package io.jenkins.plugins.qrebel;
 
-import lombok.Value;
+import lombok.Data;
 
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
@@ -9,10 +9,11 @@ import lombok.Value;
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  * <p>
- * Entry point data parsed from JSON
+ * Build data for JSON
  */
 
-@Value
-public class EntryPoint {
-  final Duration duration;
+@Data
+class BuildClassifier {
+  final String build;
+  final String version;
 }

@@ -15,8 +15,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Value;
 
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
@@ -28,30 +28,29 @@ import lombok.Value;
  * Post-build step that keeps configuration. It can be persisted by XStream, so all the non-serializable fields are
  * kept in QRebelStepPerformer.
  */
-@Value
+@Data
 @EqualsAndHashCode(callSuper=true)
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
-  private final String appName;
-  private final String targetBuildName;
-  private final String targetBuildVersion;
-  private final String baselineBuildName;
-  private final String baselineBuildVersion;
-  private final String apiKey;
-  private final String serverUrl;
-  private final int durationFail;
-  private final int ioFail;
-  private final int exceptionFail;
-  private final int threshold;
+  final String appName;
+  final String targetBuild;
+  final String targetVersion;
+  final String baselineBuild;
+  final String baselineVersion;
+  final String apiKey;
+  final String serverUrl;
+  final int durationFail;
+  final int ioFail;
+  final int exceptionFail;
+  final int threshold;
 
   @DataBoundConstructor
-  public QRebelPublisher(String appName, String targetBuildName, String targetBuildVersion, String baselineBuildName, String baselineBuildVersion, String apiKey, String serverUrl, int durationFail,
-                         int ioFail, int exceptionFail, int threshold) {
+  public QRebelPublisher(String appName, String targetBuild, String targetVersion, String baselineBuild, String baselineVersion, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) {
     this.appName = appName;
-    this.targetBuildName = targetBuildName;
-    this.targetBuildVersion = targetBuildVersion;
-    this.baselineBuildName = baselineBuildName;
-    this.baselineBuildVersion = baselineBuildVersion;
+    this.targetBuild = targetBuild;
+    this.targetVersion = targetVersion;
+    this.baselineBuild = baselineBuild;
+    this.baselineVersion = baselineVersion;
     this.apiKey = apiKey;
     this.serverUrl = serverUrl;
     this.durationFail = durationFail;

@@ -34,7 +34,9 @@ public class QRebelTestPublisherTest {
 
   private static final String APP_NAME = "foo";
   private static final String TARGET_BUILD = "2.0.6RC3";
+  private static final String TARGET_VERSION = "1";
   private static final String BASELINE_BUIKD = "2.05RC1";
+  private static final String BASELINE_VERSION = TARGET_VERSION;
 
   private static final String AUTH_KEY = "correct-key";
 
@@ -124,13 +126,13 @@ public class QRebelTestPublisherTest {
 
   private void stubIssuesApi(String authKey, String targetBuild, ResponseDefinitionBuilder response) throws IOException {
     String issuesJson = IOUtils.toString(this.getClass().getResourceAsStream("issues.json"));
-    stubFor(get("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline")
+    stubFor(get("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&targetVersion=" + TARGET_VERSION + "&defaultBaseline")
         .withHeader("authorization", equalTo(authKey))
         .willReturn(response.withBody(issuesJson)));
   }
 
   private void verifyIssuesCalled(String authKey, String targetBuild) {
-    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&defaultBaseline"))
+    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&targetVersion=" + TARGET_VERSION + "&defaultBaseline"))
         .withHeader("authorization", equalTo(authKey))
     );
   }
@@ -140,7 +142,9 @@ public class QRebelTestPublisherTest {
     EnvVars env = prop.getEnvVars();
     env.put("appName", appName);
     env.put("targetBuild", targetBuild);
+    env.put("targetVersion", TARGET_VERSION);
     env.put("baselineBuild", baselineBuild);
+    env.put("baselineVersion", BASELINE_VERSION);
     env.put("apiKey", apiKey);
     env.put("serverUrl", serverUrl);
     env.put("durationFail", String.valueOf(durationFail));
@@ -153,7 +157,7 @@ public class QRebelTestPublisherTest {
   private FreeStyleProject makeProject(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) throws IOException {
     setEnvVariables(appName, targetBuild, baselineBuild, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold);
     FreeStyleProject project = j.createFreeStyleProject();
-    project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, null, baselineBuild, null, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
+    project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, TARGET_VERSION, baselineBuild, BASELINE_VERSION, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
     return project;
   }
 
