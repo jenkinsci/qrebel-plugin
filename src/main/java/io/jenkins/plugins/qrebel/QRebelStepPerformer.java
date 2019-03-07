@@ -61,9 +61,11 @@ class QRebelStepPerformer {
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
 
-    String baselineApiUrl = getBaselineApiUrl();
-    logger.println("Setting baseline, URL " + baselineApiUrl);
-    setBaseline(baselineApiUrl);
+    if (StringUtils.isNotEmpty(fields.targetBuild)) {
+      String baselineApiUrl = getBaselineApiUrl();
+      logger.println("Setting baseline, URL " + baselineApiUrl);
+      setBaseline(baselineApiUrl);
+    }
 
     String issuesApiUrl = getIssuesApiUrl();
     logger.println("Retrieving issues list, URL " + issuesApiUrl);
@@ -151,13 +153,14 @@ class QRebelStepPerformer {
   }
 
   private String getIssuesApiUrl() {
-    return fields.serverUrl + "/api/applications/"
+    String url = fields.serverUrl + "/api/applications/"
         + fields.appName
         + "/issues/?targetBuild="
         + fields.targetBuild
         + "&targetVersion="
-        + fields.targetVersion
-        + "&defaultBaseline";
+        + fields.targetVersion;
+    return StringUtils.isNotEmpty(fields.baselineBuild) ?
+        url + "&defaultBaseline" : url;
   }
 
   // throw IllegalStateException if HTTP Request status is not OK
