@@ -32,7 +32,7 @@ class Issues {
   }
 
   @RequiredArgsConstructor
-  class Duration {
+  static class Duration {
     final Long slowestPercentile;
   }
 
