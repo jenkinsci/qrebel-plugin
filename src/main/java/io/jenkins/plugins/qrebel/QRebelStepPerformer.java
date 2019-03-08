@@ -6,20 +6,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
-import com.google.gson.Gson;
 
+import feign.Feign;
+import feign.gson.GsonDecoder;
+import feign.gson.GsonEncoder;
 import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -42,12 +34,18 @@ class QRebelStepPerformer {
   private final Fields fields;
   private final PrintStream logger;
   private final Run<?, ?> run;
-  private final Gson gson = new Gson();
+  private final QRebelRestApi restApi;
+
 
   // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
     if (run instanceof Build) {
-      return new QRebelStepPerformer(resolveFields(stepFields, run), listener.getLogger(), run);
+      Fields resolved = resolveFields(stepFields, run);
+      QRebelRestApi restApi = Feign.builder()
+          .encoder(new GsonEncoder())
+          .decoder(new GsonDecoder())
+          .target(QRebelRestApi.class, stepFields.serverUrl);
+      return new QRebelStepPerformer(resolved, listener.getLogger(), run, restApi);
     }
 
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
@@ -61,15 +59,14 @@ class QRebelStepPerformer {
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
 
+    Issues qRData;
     if (StringUtils.isNotEmpty(fields.targetBuild)) {
-      String baselineApiUrl = getBaselineApiUrl();
-      logger.println("Setting baseline, URL " + baselineApiUrl);
-      setBaseline(baselineApiUrl);
+      restApi.setDefaultBaseline(fields.apiKey, fields.appName, new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
+      qRData = restApi.getIssuesVsBaseline(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion);
     }
-
-    String issuesApiUrl = getIssuesApiUrl();
-    logger.println("Retrieving issues list, URL " + issuesApiUrl);
-    Issues qRData = getIssues(issuesApiUrl);
+    else {
+      qRData = restApi.getIssuesVsThreshold(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion);
+    }
 
     boolean failBuild = qRData.issuesCount.DURATION > fields.durationFail
         || qRData.issuesCount.IO > fields.ioFail
@@ -117,58 +114,6 @@ class QRebelStepPerformer {
       return (int) maxDelayTime.getAsLong();
     }
     return 0;
-  }
-
-  // call remote API to set Baseline
-  private void setBaseline(String baselineApiUrl) throws IOException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      HttpPut httpPut = new HttpPut(baselineApiUrl);
-      httpPut.setHeader("Content-Type", "application/json");
-      httpPut.setHeader("authorization", fields.apiKey);
-      String json = gson.toJson(new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
-      httpPut.setEntity(new StringEntity(json, ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = httpclient.execute(httpPut)) {
-        checkHttpFailure(response);
-      }
-    }
-  }
-
-  // call remote API to get issues
-  private Issues getIssues(String apiUrl) throws IOException {
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      HttpGet httpGet = new HttpGet(apiUrl);
-      httpGet.setHeader("authorization", fields.apiKey);
-      try (CloseableHttpResponse response = httpclient.execute(httpGet)) {
-        checkHttpFailure(response);
-        return gson.fromJson(EntityUtils.toString(response.getEntity()), Issues.class);
-      }
-    }
-  }
-
-  private String getBaselineApiUrl() {
-    return fields.serverUrl
-        + "/api/applications/"
-        + fields.appName
-        + "/baselines/default/";
-  }
-
-  private String getIssuesApiUrl() {
-    String url = fields.serverUrl + "/api/applications/"
-        + fields.appName
-        + "/issues/?targetBuild="
-        + fields.targetBuild
-        + "&targetVersion="
-        + fields.targetVersion;
-    return StringUtils.isNotEmpty(fields.baselineBuild) ?
-        url + "&defaultBaseline" : url;
-  }
-
-  // throw IllegalStateException if HTTP Request status is not OK
-  private void checkHttpFailure(HttpResponse response) {
-    int code = response.getStatusLine().getStatusCode();
-    if (code < HttpStatus.SC_OK || code > HttpStatus.SC_MULTI_STATUS) {
-      throw new IllegalStateException("Http request failed with status " + code);
-    }
   }
 
   // describe failure reason
