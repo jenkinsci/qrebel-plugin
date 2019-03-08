@@ -5,11 +5,14 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 
 import feign.Feign;
+import feign.Response;
+import feign.codec.ErrorDecoder;
 import feign.gson.GsonDecoder;
 import feign.gson.GsonEncoder;
 import hudson.model.Build;
@@ -36,16 +39,30 @@ class QRebelStepPerformer {
   private final Run<?, ?> run;
   private final QRebelRestApi restApi;
 
+  // extract response body if HTTP request fails
+  private static class ErrorBodyDecoder implements ErrorDecoder {
+    @Override
+    public Exception decode(String methodKey, Response response) {
+      try {
+        return new IllegalStateException(IOUtils.toString(response.body().asInputStream()));
+      }
+      catch (IOException e) {
+        return new IllegalStateException(response.toString(), e);
+      }
+    }
+  }
 
   // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
     if (run instanceof Build) {
       Fields resolved = resolveFields(stepFields, run);
+      PrintStream logger = listener.getLogger();
       QRebelRestApi restApi = Feign.builder()
+          .errorDecoder(new ErrorBodyDecoder())
           .encoder(new GsonEncoder())
           .decoder(new GsonDecoder())
           .target(QRebelRestApi.class, stepFields.serverUrl);
-      return new QRebelStepPerformer(resolved, listener.getLogger(), run, restApi);
+      return new QRebelStepPerformer(resolved, logger, run, restApi);
     }
 
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
