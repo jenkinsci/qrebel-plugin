@@ -18,7 +18,7 @@ class PluginVersion {
 
   static synchronized String get() {
     if (version == null) {
-      Plugin qrebelPlugin = Jenkins.get().getPlugin("qrebel");
+      Plugin qrebelPlugin = Jenkins.get().getPlugin(QRebelPublisher.PLUGIN_SHORT_NAME);
       if (qrebelPlugin != null) {
         version = qrebelPlugin.getWrapper().getVersion();
       }

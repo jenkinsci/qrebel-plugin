@@ -32,6 +32,8 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper=true)
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
+  static final String PLUGIN_SHORT_NAME = "qrebel";
+
   final String appName;
   final String targetBuild;
   final String targetVersion;
@@ -65,7 +67,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     logic.perform();
   }
 
-  @Symbol("qrebel")
+  @Symbol(PLUGIN_SHORT_NAME)
   @Extension
   public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
     @Override
