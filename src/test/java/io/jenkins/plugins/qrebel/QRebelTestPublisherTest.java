@@ -1,5 +1,7 @@
 package io.jenkins.plugins.qrebel;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.absent;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -9,6 +11,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 
 import java.io.IOException;
@@ -19,6 +22,7 @@ import org.jvnet.hudson.test.JenkinsRule;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 
 import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
@@ -60,111 +64,134 @@ public class QRebelTestPublisherTest {
 
   @Test
   public void authFailedOnBaseline() throws Exception {
-    stubAuthApi(AUTH_KEY, forbidden());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
-    verifyBaselineCalled(AUTH_KEY);
+    stubAuthApi(forbidden());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyBaselineCalled();
   }
 
   @Test
   public void authFailedOnIssues() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, forbidden());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
-    verifyIssuesCalled(AUTH_KEY, TARGET_BUILD);
+    stubAuthApi(ok());
+    stubIssuesApi(forbidden());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyIssuesCalled(true);
   }
 
   @Test
   public void tooManySlowRequests() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    buildAndAssertFailure(makeProject(TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
   }
 
   @Test
   public void tooManyExceptions() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
   }
 
   @Test
   public void thresholdBelowFastest() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
   }
 
   @Test
   public void thresholdTouchesFastest() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
   }
 
   @Test
   public void thresholdTouchesSlowest() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    buildAndAssertFailure(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
   }
 
   @Test
   public void thresholdAboveSlowest() throws Exception {
-    stubAuthApi(AUTH_KEY, ok());
-    stubIssuesApi(AUTH_KEY, TARGET_BUILD, ok());
-    j.buildAndAssertSuccess(makeProject(APP_NAME, TARGET_BUILD, BASELINE_BUIKD, AUTH_KEY, wireMockRule.baseUrl(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
-    verifyBaselineCalled(AUTH_KEY);
-    verifyIssuesCalled(AUTH_KEY, TARGET_BUILD);
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    j.buildAndAssertSuccess(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyBaselineCalled();
+    verifyIssuesCalled(true);
   }
 
-  private void stubAuthApi(String authKey, ResponseDefinitionBuilder response) {
+  @Test
+  public void userLimitsSet() throws Exception {
+    stubAuthApi(ok());
+    stubIssuesApi(ok());
+    j.buildAndAssertSuccess(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyLimitsAndProtocolSet(IGNORE_ALL_SLOW_REQUESTS);
+  }
+
+  private void stubAuthApi(ResponseDefinitionBuilder response) {
     stubFor(put("/api/applications/" + APP_NAME + "/baselines/default/")
         .withHeader("Content-Type", equalTo("application/json"))
-        .withHeader("authorization", equalTo(authKey))
+        .withHeader("authorization", equalTo(AUTH_KEY))
         .willReturn(response));
   }
 
-  private void verifyBaselineCalled(String authKey) {
+  private void verifyBaselineCalled() {
     verify(putRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/baselines/default/"))
         .withHeader("Content-Type", equalTo("application/json"))
-        .withHeader("authorization", equalTo(authKey))
+        .withHeader("authorization", equalTo(AUTH_KEY))
     );
   }
 
-  private void stubIssuesApi(String authKey, String targetBuild, ResponseDefinitionBuilder response) throws IOException {
+  private void stubIssuesApi(ResponseDefinitionBuilder response) throws IOException {
     String issuesJson = IOUtils.toString(this.getClass().getResourceAsStream("issues.json"));
-    stubFor(get("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&targetVersion=" + TARGET_VERSION + "&defaultBaseline")
-        .withHeader("authorization", equalTo(authKey))
+    stubFor(get(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
+        .withHeader("authorization", equalTo(AUTH_KEY))
+        .withQueryParam("targetBuild", equalTo(TARGET_BUILD))
+        .withQueryParam("targetVersion", equalTo(TARGET_VERSION))
         .willReturn(response.withBody(issuesJson)));
   }
 
-  private void verifyIssuesCalled(String authKey, String targetBuild) {
-    verify(getRequestedFor(urlEqualTo("/api/applications/" + APP_NAME + "/issues/?targetBuild=" + targetBuild + "&targetVersion=" + TARGET_VERSION + "&defaultBaseline"))
-        .withHeader("authorization", equalTo(authKey))
-    );
+  private void verifyIssuesCalled(boolean withDefaultBaseline) {
+    RequestPatternBuilder patternBuilder = getRequestedFor(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
+        .withQueryParam("targetBuild", equalTo(TARGET_BUILD))
+        .withQueryParam("targetVersion", equalTo(TARGET_VERSION))
+        .withQueryParam("defaultBaseline", containing(""))
+        .withHeader("authorization", equalTo(AUTH_KEY))
+        .withQueryParam("defaultBaseline", withDefaultBaseline? containing("") : absent());
+    verify(patternBuilder);
   }
 
-  private void setEnvVariables(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) {
+  private void verifyLimitsAndProtocolSet(int slowRequestsAllowed) {
+    RequestPatternBuilder patternBuilder = getRequestedFor(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
+        .withQueryParam("slowRequestsAllowed", equalTo(String.valueOf(slowRequestsAllowed)))
+        .withQueryParam("excessiveIOAllowed", equalTo(String.valueOf(IGNORE_ALL_IO_ISSUES)))
+        .withQueryParam("exceptionsAllowed", equalTo(String.valueOf(IGNORE_ALL_EXCEPTIONS)))
+        .withQueryParam("jenkinsPluginVersion", containing("1"));
+    verify(patternBuilder);
+  }
+
+  private void setEnvVariables(int durationFail, int exceptionFail, int threshold) {
     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
     EnvVars env = prop.getEnvVars();
-    env.put("appName", appName);
-    env.put("targetBuild", targetBuild);
+    env.put("appName", APP_NAME);
+    env.put("targetBuild", TARGET_BUILD);
     env.put("targetVersion", TARGET_VERSION);
-    env.put("baselineBuild", baselineBuild);
+    env.put("baselineBuild", BASELINE_BUIKD);
     env.put("baselineVersion", BASELINE_VERSION);
-    env.put("apiKey", apiKey);
-    env.put("serverUrl", serverUrl);
+    env.put("apiKey", AUTH_KEY);
+    env.put("serverUrl", wireMockRule.baseUrl());
     env.put("durationFail", String.valueOf(durationFail));
-    env.put("ioFail", String.valueOf(ioFail));
+    env.put("ioFail", String.valueOf(IGNORE_ALL_IO_ISSUES));
     env.put("exceptionFail", String.valueOf(exceptionFail));
     env.put("threshold", String.valueOf(threshold));
     j.jenkins.getGlobalNodeProperties().add(prop);
   }
 
-  private FreeStyleProject makeProject(String appName, String targetBuild, String baselineBuild, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) throws IOException {
-    setEnvVariables(appName, targetBuild, baselineBuild, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold);
+  private FreeStyleProject makeProject(int durationFail, int exceptionFail, int threshold) throws IOException {
+    setEnvVariables(durationFail, exceptionFail, threshold);
     FreeStyleProject project = j.createFreeStyleProject();
-    project.getPublishersList().add(new QRebelPublisher(appName, targetBuild, TARGET_VERSION, baselineBuild, BASELINE_VERSION, apiKey, serverUrl, durationFail, ioFail, exceptionFail, threshold));
+    project.getPublishersList().add(new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, TARGET_BUILD, BASELINE_VERSION, AUTH_KEY, wireMockRule.baseUrl(), durationFail, IGNORE_ALL_IO_ISSUES, exceptionFail, threshold));
     return project;
   }
 

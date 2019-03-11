@@ -20,11 +20,15 @@ interface QRebelRestApi {
   @RequestLine("PUT /api/applications/{appName}/baselines/default/")
   void setDefaultBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, BuildClassifier classifier);
 
-  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&defaultBaseline")
+  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}&defaultBaseline")
   Issues getIssuesVsBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                   @Param("targetVersion") String targetVersion);
+                             @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") int slowRequestsAllowed,
+                             @Param("excessiveIOAllowed") int excessiveIOAllowed, @Param("exceptionsAllowed") int exceptionsAllowed,
+                             @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
 
-  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}")
+  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}x")
   Issues getIssuesVsThreshold(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                   @Param("targetVersion") String targetVersion);
+                              @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") int slowRequestsAllowed,
+                              @Param("excessiveIOAllowed") int excessiveIOAllowed, @Param("exceptionsAllowed") int exceptionsAllowed,
+                              @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
 }
