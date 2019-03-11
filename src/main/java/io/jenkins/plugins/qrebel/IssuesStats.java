@@ -22,27 +22,25 @@ class IssuesStats {
   // check if found issues are too slow
   boolean isThresholdProvidedAndExceeded(int threshold) {
     Optional<List<Long>> entryPointTimes = getEntryPointTimes();
-    if (!entryPointTimes.isPresent()) {
-      return false;
+    if (entryPointTimes.isPresent()) {
+      OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
+      if (maxDelayTime.isPresent()) {
+        return threshold > 0 && threshold <= (int) maxDelayTime.getAsLong();
+      }
     }
 
-    OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
-    if (maxDelayTime.isPresent()) {
-      return threshold > 0 && threshold <= (int) maxDelayTime.getAsLong();
-    }
     return false;
   }
 
   int getSlowestDelay() {
     Optional<List<Long>> entryPointTimes = getEntryPointTimes();
-    if (!entryPointTimes.isPresent()) {
-      return 0;
+    if (entryPointTimes.isPresent()) {
+      OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
+      if (maxDelayTime.isPresent()) {
+        return (int) maxDelayTime.getAsLong();
+      }
     }
 
-    OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
-    if (maxDelayTime.isPresent()) {
-      return (int) maxDelayTime.getAsLong();
-    }
     return 0;
   }
 
