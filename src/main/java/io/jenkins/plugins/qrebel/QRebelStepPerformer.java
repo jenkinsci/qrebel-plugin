@@ -51,7 +51,7 @@ class QRebelStepPerformer {
     logger.println("Target Version: " + fields.targetVersion);
 
     Issues qRData;
-    if (StringUtils.isNotEmpty(fields.targetBuild)) {
+    if (StringUtils.isNotEmpty(fields.baselineBuild)) {
       restApi.setDefaultBaseline(fields.apiKey, fields.appName, new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
       qRData = restApi.getIssuesVsBaseline(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.durationFail, fields.ioFail, fields.exceptionFail, PluginVersion.get());
     }

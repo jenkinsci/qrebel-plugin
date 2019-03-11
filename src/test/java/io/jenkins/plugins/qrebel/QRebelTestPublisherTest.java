@@ -46,7 +46,8 @@ public class QRebelTestPublisherTest {
   private static final String APP_NAME = "foo";
   private static final String TARGET_BUILD = "2.0.6RC3";
   private static final String TARGET_VERSION = "1";
-  private static final String BASELINE_BUIKD = "2.05RC1";
+  private static final String BASELINE_BUILD = "2.05RC1";
+  private static final String NO_BASELINE_BUILD = "";
   private static final String BASELINE_VERSION = TARGET_VERSION;
 
   private static final String AUTH_KEY = "correct-key";
@@ -65,7 +66,7 @@ public class QRebelTestPublisherTest {
   @Test
   public void authFailedOnBaseline() throws Exception {
     stubAuthApi(forbidden());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
     verifyBaselineCalled();
   }
 
@@ -73,7 +74,7 @@ public class QRebelTestPublisherTest {
   public void authFailedOnIssues() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(forbidden());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
     verifyIssuesCalled(true);
   }
 
@@ -81,51 +82,58 @@ public class QRebelTestPublisherTest {
   public void tooManySlowRequests() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
   }
 
   @Test
   public void tooManyExceptions() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
   }
 
   @Test
   public void thresholdBelowFastest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
   }
 
   @Test
   public void thresholdTouchesFastest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
   }
 
   @Test
   public void thresholdTouchesSlowest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
   }
 
   @Test
   public void thresholdAboveSlowest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    j.buildAndAssertSuccess(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
     verifyBaselineCalled();
     verifyIssuesCalled(true);
+  }
+
+  @Test
+  public void noDefaultBaseline() throws Exception {
+    stubIssuesApi(ok());
+    j.buildAndAssertSuccess(makeProject(NO_BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    verifyIssuesCalled(false);
   }
 
   @Test
   public void userLimitsSet() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    j.buildAndAssertSuccess(makeProject(IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
     verifyLimitsAndProtocolSet(IGNORE_ALL_SLOW_REQUESTS);
   }
 
@@ -171,13 +179,13 @@ public class QRebelTestPublisherTest {
     verify(patternBuilder);
   }
 
-  private void setEnvVariables(int durationFail, int exceptionFail, int threshold) {
+  private void setEnvVariables(String baselineBuild, int durationFail, int exceptionFail, int threshold) {
     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
     EnvVars env = prop.getEnvVars();
     env.put("appName", APP_NAME);
     env.put("targetBuild", TARGET_BUILD);
     env.put("targetVersion", TARGET_VERSION);
-    env.put("baselineBuild", BASELINE_BUIKD);
+    env.put("baselineBuild", baselineBuild);
     env.put("baselineVersion", BASELINE_VERSION);
     env.put("apiKey", AUTH_KEY);
     env.put("serverUrl", wireMockRule.baseUrl());
@@ -188,10 +196,10 @@ public class QRebelTestPublisherTest {
     j.jenkins.getGlobalNodeProperties().add(prop);
   }
 
-  private FreeStyleProject makeProject(int durationFail, int exceptionFail, int threshold) throws IOException {
-    setEnvVariables(durationFail, exceptionFail, threshold);
+  private FreeStyleProject makeProject(String baselineBuild, int durationFail, int exceptionFail, int threshold) throws IOException {
+    setEnvVariables(baselineBuild, durationFail, exceptionFail, threshold);
     FreeStyleProject project = j.createFreeStyleProject();
-    project.getPublishersList().add(new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, TARGET_BUILD, BASELINE_VERSION, AUTH_KEY, wireMockRule.baseUrl(), durationFail, IGNORE_ALL_IO_ISSUES, exceptionFail, threshold));
+    project.getPublishersList().add(new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, baselineBuild, BASELINE_VERSION, AUTH_KEY, wireMockRule.baseUrl(), durationFail, IGNORE_ALL_IO_ISSUES, exceptionFail, threshold));
     return project;
   }
 
