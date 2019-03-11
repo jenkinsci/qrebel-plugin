@@ -1,8 +1,6 @@
 package io.jenkins.plugins.qrebel;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,14 +42,4 @@ class Issues {
   final String appViewUrl;
   final IssuesCount issuesCount;
   final List<EntryPoint> entryPoints;
-
-  Optional<List<Long>> getEntryPointTimes() {
-    List<Long> slowestPercentile = entryPoints
-        .stream()
-        .filter(entryPoint -> entryPoint.duration != null && entryPoint.duration.slowestPercentile != null)
-        .map(entryPoint -> entryPoint.duration.slowestPercentile)
-        .collect(Collectors.toList());
-    return slowestPercentile.isEmpty() ?
-        Optional.empty() : Optional.of(slowestPercentile);
-  }
 }

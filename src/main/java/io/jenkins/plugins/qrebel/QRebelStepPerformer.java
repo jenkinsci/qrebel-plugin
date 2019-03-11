@@ -2,19 +2,10 @@ package io.jenkins.plugins.qrebel;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.List;
-import java.util.Optional;
-import java.util.OptionalLong;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 
-import feign.Feign;
-import feign.Response;
-import feign.codec.ErrorDecoder;
-import feign.gson.GsonDecoder;
-import feign.gson.GsonEncoder;
 import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
@@ -39,29 +30,12 @@ class QRebelStepPerformer {
   private final Run<?, ?> run;
   private final QRebelRestApi restApi;
 
-  // extract response body if HTTP request fails
-  private static class ErrorBodyDecoder implements ErrorDecoder {
-    @Override
-    public Exception decode(String methodKey, Response response) {
-      try {
-        return new IllegalStateException(IOUtils.toString(response.body().asInputStream()));
-      }
-      catch (IOException e) {
-        return new IllegalStateException(response.toString(), e);
-      }
-    }
-  }
-
   // build a new class instance
   static QRebelStepPerformer make(QRebelPublisher stepFields, Run<?, ?> run, TaskListener listener) {
     if (run instanceof Build) {
       Fields resolved = resolveFields(stepFields, run);
       PrintStream logger = listener.getLogger();
-      QRebelRestApi restApi = Feign.builder()
-          .errorDecoder(new ErrorBodyDecoder())
-          .encoder(new GsonEncoder())
-          .decoder(new GsonDecoder())
-          .target(QRebelRestApi.class, stepFields.serverUrl);
+      QRebelRestApi restApi = QRebelRestApiBuilder.make(resolved.serverUrl);
       return new QRebelStepPerformer(resolved, logger, run, restApi);
     }
 
@@ -84,57 +58,31 @@ class QRebelStepPerformer {
     else {
       qRData = restApi.getIssuesVsThreshold(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.durationFail, fields.ioFail, fields.exceptionFail, PluginVersion.get());
     }
+    IssuesStats stats = new IssuesStats(qRData);
 
     boolean failBuild = qRData.issuesCount.DURATION > fields.durationFail
         || qRData.issuesCount.IO > fields.ioFail
         || qRData.issuesCount.EXCEPTIONS > fields.exceptionFail
-        || isThresholdProvidedAndExceeded(qRData);
+        || stats.isThresholdProvidedAndExceeded(fields.threshold);
 
     if (failBuild) {
       run.setResult(Result.FAILURE);
       String initialDescription = run.getDescription();
-      run.setDescription(getFailureDescription(qRData, initialDescription));
+      run.setDescription(getFailureDescription(qRData, initialDescription, stats.getSlowestDelay()));
       logger.println("Performance regression have been found in the current build. Failing build.");
 
       logger.println(String.format("Slow Requests: %d%n" +
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
               " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, getSlowestDelay(qRData)));
+          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, stats.getSlowestDelay()));
 
       logger.println("For more detail check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
     }
   }
 
-  // check if found issues are too slow
-  private boolean isThresholdProvidedAndExceeded(Issues qRData) {
-    Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
-    if (!entryPointTimes.isPresent()) {
-      return false;
-    }
-
-    OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
-    if (maxDelayTime.isPresent()) {
-      return fields.threshold > 0 && fields.threshold <= (int) maxDelayTime.getAsLong();
-    }
-    return false;
-  }
-
-  private int getSlowestDelay(Issues qRData) {
-    Optional<List<Long>> entryPointTimes = qRData.getEntryPointTimes();
-    if (!entryPointTimes.isPresent()) {
-      return 0;
-    }
-
-    OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
-    if (maxDelayTime.isPresent()) {
-      return (int) maxDelayTime.getAsLong();
-    }
-    return 0;
-  }
-
   // describe failure reason
-  private String getFailureDescription(Issues qRData, String buildDescription) {
+  private String getFailureDescription(Issues qRData, String buildDescription, int slowestDelay) {
     StringBuilder descriptionBuilder = new StringBuilder();
     if (StringUtils.isNotEmpty(buildDescription)) {
       descriptionBuilder.append(buildDescription);
@@ -147,7 +95,7 @@ class QRebelStepPerformer {
             "For full report check your <a href= %s >dashboard</a>.<br/>",
         qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
-        fields.threshold, getSlowestDelay(qRData), qRData.appViewUrl));
+        fields.threshold, slowestDelay, qRData.appViewUrl));
 
     return descriptionBuilder.toString();
   }
@@ -168,6 +116,7 @@ class QRebelStepPerformer {
         .build();
   }
 
+  // resolve fields, NotNull
   private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
     try {
       String resolved = EnvVarsResolver.resolveEnvVars(run, value);
