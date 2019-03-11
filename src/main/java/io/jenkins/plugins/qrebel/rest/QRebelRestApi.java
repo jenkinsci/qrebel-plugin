@@ -1,4 +1,4 @@
-package io.jenkins.plugins.qrebel;
+package io.jenkins.plugins.qrebel.rest;
 
 import feign.Headers;
 import feign.Param;
@@ -15,7 +15,7 @@ import feign.RequestLine;
  */
 
 @Headers({"Content-Type: application/json", "authorization: {apiKey}"})
-interface QRebelRestApi {
+public interface QRebelRestApi {
 
   @RequestLine("PUT /api/applications/{appName}/baselines/default/")
   void setDefaultBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, BuildClassifier classifier);

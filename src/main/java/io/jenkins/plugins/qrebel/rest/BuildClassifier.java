@@ -1,4 +1,4 @@
-package io.jenkins.plugins.qrebel;
+package io.jenkins.plugins.qrebel.rest;
 
 import lombok.Data;
 
@@ -13,7 +13,7 @@ import lombok.Data;
  */
 
 @Data
-class BuildClassifier {
-  final String build;
-  final String version;
+public class BuildClassifier {
+  public final String build;
+  public final String version;
 }

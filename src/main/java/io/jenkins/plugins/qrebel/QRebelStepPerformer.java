@@ -10,6 +10,10 @@ import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import io.jenkins.plugins.qrebel.rest.BuildClassifier;
+import io.jenkins.plugins.qrebel.rest.Issues;
+import io.jenkins.plugins.qrebel.rest.QRebelRestApi;
+import io.jenkins.plugins.qrebel.rest.QRebelRestApiBuilder;
 import lombok.Value;
 
 /**

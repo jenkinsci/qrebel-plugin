@@ -1,4 +1,4 @@
-package io.jenkins.plugins.qrebel;
+package io.jenkins.plugins.qrebel.rest;
 
 
 import java.io.IOException;
@@ -19,9 +19,9 @@ import feign.gson.GsonEncoder;
  * <p>
  * Configures Open FEIGN
  */
-class QRebelRestApiBuilder {
+public class QRebelRestApiBuilder {
   // build a new class instance
-  static QRebelRestApi make(String serverUrl) {
+  public static QRebelRestApi make(String serverUrl) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
         .encoder(new GsonEncoder())
