@@ -24,6 +24,7 @@ import hudson.tasks.Recorder;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Post-build step that keeps configuration. It can be persisted by XStream, so all the non-serializable fields are
@@ -31,6 +32,7 @@ import lombok.EqualsAndHashCode;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@RequiredArgsConstructor(onConstructor = @__({@DataBoundConstructor}))
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   static final String PLUGIN_SHORT_NAME = "qrebel";
@@ -46,22 +48,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final long ioFail;
   final long exceptionFail;
   final long threshold;
-
-  @DataBoundConstructor
-  public QRebelPublisher(String appName, String targetBuild, String targetVersion, String baselineBuild, String baselineVersion, String apiKey, String serverUrl,
-                         long durationFail, long ioFail, long exceptionFail, long threshold) {
-    this.appName = appName;
-    this.targetBuild = targetBuild;
-    this.targetVersion = targetVersion;
-    this.baselineBuild = baselineBuild;
-    this.baselineVersion = baselineVersion;
-    this.apiKey = apiKey;
-    this.serverUrl = serverUrl;
-    this.durationFail = durationFail;
-    this.ioFail = ioFail;
-    this.exceptionFail = exceptionFail;
-    this.threshold = threshold;
-  }
 
   @Override
   public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
