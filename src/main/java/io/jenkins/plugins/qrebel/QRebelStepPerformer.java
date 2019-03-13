@@ -20,7 +20,7 @@ import hudson.model.TaskListener;
 import io.jenkins.plugins.qrebel.rest.BuildClassifier;
 import io.jenkins.plugins.qrebel.rest.Issues;
 import io.jenkins.plugins.qrebel.rest.QRebelRestApi;
-import io.jenkins.plugins.qrebel.rest.QRebelRestApiBuilder;
+import io.jenkins.plugins.qrebel.rest.QRebelRestApiClient;
 import lombok.Value;
 
 /**
@@ -39,7 +39,7 @@ class QRebelStepPerformer {
     if (run instanceof Build) {
       Fields resolved = resolveFields(stepFields, run);
       PrintStream logger = listener.getLogger();
-      QRebelRestApi restApi = QRebelRestApiBuilder.make(resolved.serverUrl);
+      QRebelRestApi restApi = QRebelRestApiClient.make(resolved.serverUrl);
       return new QRebelStepPerformer(resolved, logger, run, restApi);
     }
 

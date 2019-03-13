@@ -19,8 +19,8 @@ import feign.gson.GsonEncoder;
 /**
  * Configures Open FEIGN
  */
-public class QRebelRestApiBuilder {
-  // build a new class instance
+public class QRebelRestApiClient {
+  // create a new client instance
   public static QRebelRestApi make(String serverUrl) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
