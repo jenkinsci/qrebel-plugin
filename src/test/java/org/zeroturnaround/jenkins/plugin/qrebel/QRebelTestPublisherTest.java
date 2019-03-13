@@ -5,7 +5,7 @@
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
-package io.jenkins.plugins.qrebel;
+package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;

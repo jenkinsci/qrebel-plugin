@@ -5,11 +5,13 @@
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
-package io.jenkins.plugins.qrebel.rest;
+package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
-public class EntryPoint {
-  public final Duration duration;
+public class IssuesCount {
+  public final long DURATION;
+  public final long EXCEPTIONS;
+  public final long IO;
 }

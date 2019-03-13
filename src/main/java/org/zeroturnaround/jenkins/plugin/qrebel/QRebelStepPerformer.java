@@ -5,22 +5,23 @@
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
-package io.jenkins.plugins.qrebel;
+package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.BuildClassifier;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.Issues;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApi;
 
 import hudson.model.Build;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
-import io.jenkins.plugins.qrebel.rest.BuildClassifier;
-import io.jenkins.plugins.qrebel.rest.Issues;
-import io.jenkins.plugins.qrebel.rest.QRebelRestApi;
-import io.jenkins.plugins.qrebel.rest.QRebelRestApiClient;
+
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApiClient;
 import lombok.Value;
 
 /**

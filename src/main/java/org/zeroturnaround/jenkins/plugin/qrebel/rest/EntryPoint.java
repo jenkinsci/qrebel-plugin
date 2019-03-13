@@ -5,12 +5,11 @@
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
-package io.jenkins.plugins.qrebel.rest;
+package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
-@Data
-public class BuildClassifier {
-  public final String build;
-  public final String version;
+@RequiredArgsConstructor
+public class EntryPoint {
+  public final Duration duration;
 }

@@ -5,7 +5,7 @@
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
-package io.jenkins.plugins.qrebel;
+package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
