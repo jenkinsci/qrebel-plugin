@@ -21,7 +21,7 @@ import feign.gson.GsonEncoder;
  */
 public class QRebelRestApiClient {
   // create a new client instance
-  public static QRebelRestApi make(String serverUrl) {
+  public static QRebelRestApi create(String serverUrl) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
         .encoder(new GsonEncoder())

@@ -40,7 +40,7 @@ class QRebelStepPerformer {
     if (run instanceof Build) {
       Fields resolved = resolveFields(stepFields, run);
       PrintStream logger = listener.getLogger();
-      QRebelRestApi restApi = QRebelRestApiClient.make(resolved.serverUrl);
+      QRebelRestApi restApi = QRebelRestApiClient.create(resolved.serverUrl);
       return new QRebelStepPerformer(resolved, logger, run, restApi);
     }
 
