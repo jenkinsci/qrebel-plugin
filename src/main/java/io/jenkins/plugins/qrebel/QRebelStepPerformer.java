@@ -1,5 +1,12 @@
 package io.jenkins.plugins.qrebel;
 
+/**
+ * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
+ * <p>
+ * This software is released under the terms of the
+ * MIT license. See https://opensource.org/licenses/MIT
+ * for more information.
+ */
 import java.io.IOException;
 import java.io.PrintStream;
 import org.apache.commons.lang.StringUtils;
@@ -17,16 +24,9 @@ import io.jenkins.plugins.qrebel.rest.QRebelRestApiBuilder;
 import lombok.Value;
 
 /**
- * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
- * <p>
- * This software is released under the terms of the
- * MIT license. See https://opensource.org/licenses/MIT
- * for more information.
- * <p>
  * Business logic for QRebelPublisher. A Jenkins build will be marked as failed if there are some issues detected by QRebel
  * The issues are obtained via HTTP requests to the QRebel server. Some of them can be ignored depending on the plugin configuration.
  */
-
 @Value
 class QRebelStepPerformer {
   private final Fields fields;

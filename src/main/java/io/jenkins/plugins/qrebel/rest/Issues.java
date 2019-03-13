@@ -1,19 +1,20 @@
 package io.jenkins.plugins.qrebel.rest;
 
-import java.util.List;
-
-import lombok.RequiredArgsConstructor;
-
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
  * <p>
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
- * <p>
- * Issues data parsed from JSON
  */
 
+import java.util.List;
+
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Issues data parsed from JSON
+ */
 @RequiredArgsConstructor
 public class Issues {
 

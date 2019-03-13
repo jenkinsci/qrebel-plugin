@@ -1,5 +1,12 @@
 package io.jenkins.plugins.qrebel;
 
+/**
+ * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
+ * <p>
+ * This software is released under the terms of the
+ * MIT license. See https://opensource.org/licenses/MIT
+ * for more information.
+ */
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import org.jenkinsci.Symbol;
@@ -19,12 +26,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
- * <p>
- * This software is released under the terms of the
- * MIT license. See https://opensource.org/licenses/MIT
- * for more information.
- * <p>
  * Post-build step that keeps configuration. It can be persisted by XStream, so all the non-serializable fields are
  * kept in QRebelStepPerformer.
  */

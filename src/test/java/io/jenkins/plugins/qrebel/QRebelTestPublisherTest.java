@@ -1,5 +1,12 @@
 package io.jenkins.plugins.qrebel;
 
+/**
+ * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
+ * <p>
+ * This software is released under the terms of the
+ * MIT license. See https://opensource.org/licenses/MIT
+ * for more information.
+ */
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -29,13 +36,6 @@ import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 
-/**
- * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
- * <p>
- * This software is released under the terms of the
- * MIT license. See https://opensource.org/licenses/MIT
- * for more information.
- */
 public class QRebelTestPublisherTest {
 
   @Rule

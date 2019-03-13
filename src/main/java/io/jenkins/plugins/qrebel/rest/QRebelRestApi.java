@@ -1,9 +1,5 @@
 package io.jenkins.plugins.qrebel.rest;
 
-import feign.Headers;
-import feign.Param;
-import feign.RequestLine;
-
 /**
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
  * <p>
@@ -14,6 +10,13 @@ import feign.RequestLine;
  * Rest API for feign HTTP client
  */
 
+import feign.Headers;
+import feign.Param;
+import feign.RequestLine;
+
+/**
+ * Rest API for feign HTTP client
+ */
 @Headers({"Content-Type: application/json", "authorization: {apiKey}"})
 public interface QRebelRestApi {
 
