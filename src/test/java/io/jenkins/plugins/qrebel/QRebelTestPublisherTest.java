@@ -52,15 +52,15 @@ public class QRebelTestPublisherTest {
 
   private static final String AUTH_KEY = "correct-key";
 
-  private static final int IGNORE_ALL_SLOW_REQUESTS = 15;
-  private static final int TOO_MANY_SLOW_REQUESTS = IGNORE_ALL_SLOW_REQUESTS - 1;
-  private static final int IGNORE_ALL_IO_ISSUES = 0;
-  private static final int IGNORE_ALL_EXCEPTIONS = 2;
-  private static final int TOO_MANY_EXCEPTIONS = IGNORE_ALL_EXCEPTIONS - 1;
-  private static final int FASTEST_REQUEST = 26;
-  private static final int SLOWEST_REQUEST = 3770;
-  private static final int THRESHOLD_BELOW_FASTEST = FASTEST_REQUEST - 1;
-  private static final int THRESHOLD_ABOVE_SLOWEST = SLOWEST_REQUEST + 1;
+  private static final long IGNORE_ALL_SLOW_REQUESTS = 15L;
+  private static final long TOO_MANY_SLOW_REQUESTS = IGNORE_ALL_SLOW_REQUESTS - 1L;
+  private static final long IGNORE_ALL_IO_ISSUES = 0L;
+  private static final long IGNORE_ALL_EXCEPTIONS = 2L;
+  private static final long TOO_MANY_EXCEPTIONS = IGNORE_ALL_EXCEPTIONS - 1L;
+  private static final long FASTEST_REQUEST = 26L;
+  private static final long SLOWEST_REQUEST = 3770L;
+  private static final long THRESHOLD_BELOW_FASTEST = FASTEST_REQUEST - 1L;
+  private static final long THRESHOLD_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
 
 
   @Test
@@ -170,7 +170,7 @@ public class QRebelTestPublisherTest {
     verify(patternBuilder);
   }
 
-  private void verifyLimitsAndProtocolSet(int slowRequestsAllowed) {
+  private void verifyLimitsAndProtocolSet(long slowRequestsAllowed) {
     RequestPatternBuilder patternBuilder = getRequestedFor(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
         .withQueryParam("slowRequestsAllowed", equalTo(String.valueOf(slowRequestsAllowed)))
         .withQueryParam("excessiveIOAllowed", equalTo(String.valueOf(IGNORE_ALL_IO_ISSUES)))
@@ -179,7 +179,7 @@ public class QRebelTestPublisherTest {
     verify(patternBuilder);
   }
 
-  private void setEnvVariables(String baselineBuild, int durationFail, int exceptionFail, int threshold) {
+  private void setEnvVariables(String baselineBuild, long durationFail, long exceptionFail, long threshold) {
     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
     EnvVars env = prop.getEnvVars();
     env.put("appName", APP_NAME);
@@ -196,7 +196,7 @@ public class QRebelTestPublisherTest {
     j.jenkins.getGlobalNodeProperties().add(prop);
   }
 
-  private FreeStyleProject makeProject(String baselineBuild, int durationFail, int exceptionFail, int threshold) throws IOException {
+  private FreeStyleProject makeProject(String baselineBuild, long durationFail, long exceptionFail, long threshold) throws IOException {
     setEnvVariables(baselineBuild, durationFail, exceptionFail, threshold);
     FreeStyleProject project = j.createFreeStyleProject();
     project.getPublishersList().add(new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, baselineBuild, BASELINE_VERSION, AUTH_KEY, wireMockRule.baseUrl(), durationFail, IGNORE_ALL_IO_ISSUES, exceptionFail, threshold));

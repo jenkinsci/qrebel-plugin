@@ -22,13 +22,13 @@ public interface QRebelRestApi {
 
   @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}&defaultBaseline")
   Issues getIssuesVsBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                             @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") int slowRequestsAllowed,
-                             @Param("excessiveIOAllowed") int excessiveIOAllowed, @Param("exceptionsAllowed") int exceptionsAllowed,
+                             @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") long slowRequestsAllowed,
+                             @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
                              @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
 
   @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}x")
   Issues getIssuesVsThreshold(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                              @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") int slowRequestsAllowed,
-                              @Param("excessiveIOAllowed") int excessiveIOAllowed, @Param("exceptionsAllowed") int exceptionsAllowed,
+                              @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") long slowRequestsAllowed,
+                              @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
                               @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
 }

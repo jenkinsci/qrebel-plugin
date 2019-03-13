@@ -21,8 +21,8 @@ class Fields {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
-  final int durationFail;
-  final int ioFail;
-  final int exceptionFail;
-  final int threshold;
+  final long durationFail;
+  final long ioFail;
+  final long exceptionFail;
+  final long threshold;
 }

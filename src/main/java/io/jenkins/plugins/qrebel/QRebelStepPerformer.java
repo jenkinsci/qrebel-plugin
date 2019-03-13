@@ -72,21 +72,21 @@ class QRebelStepPerformer {
     if (failBuild) {
       run.setResult(Result.FAILURE);
       String initialDescription = run.getDescription();
-      run.setDescription(getFailureDescription(qRData, initialDescription, stats.getSlowestDelay()));
+      run.setDescription(getFailureDescription(qRData, initialDescription, stats.getSlowestDuration()));
       logger.println("Performance regression have been found in the current build. Failing build.");
 
       logger.println(String.format("Slow Requests: %d%n" +
               " Excessive IO: %d %n" +
               " Exceptions: %d  %n" +
               " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, stats.getSlowestDelay()));
+          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, stats.getSlowestDuration()));
 
       logger.println("For more detail check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
     }
   }
 
   // describe failure reason
-  private String getFailureDescription(Issues qRData, String buildDescription, int slowestDelay) {
+  private String getFailureDescription(Issues qRData, String buildDescription, long slowestDuration) {
     StringBuilder descriptionBuilder = new StringBuilder();
     if (StringUtils.isNotEmpty(buildDescription)) {
       descriptionBuilder.append(buildDescription);
@@ -99,7 +99,7 @@ class QRebelStepPerformer {
             "For full report check your <a href= %s >dashboard</a>.<br/>",
         qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
-        fields.threshold, slowestDelay, qRData.appViewUrl));
+        fields.threshold, slowestDuration, qRData.appViewUrl));
 
     return descriptionBuilder.toString();
   }

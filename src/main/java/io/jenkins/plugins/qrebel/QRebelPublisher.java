@@ -42,13 +42,14 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
-  final int durationFail;
-  final int ioFail;
-  final int exceptionFail;
-  final int threshold;
+  final long durationFail;
+  final long ioFail;
+  final long exceptionFail;
+  final long threshold;
 
   @DataBoundConstructor
-  public QRebelPublisher(String appName, String targetBuild, String targetVersion, String baselineBuild, String baselineVersion, String apiKey, String serverUrl, int durationFail, int ioFail, int exceptionFail, int threshold) {
+  public QRebelPublisher(String appName, String targetBuild, String targetVersion, String baselineBuild, String baselineVersion, String apiKey, String serverUrl,
+                         long durationFail, long ioFail, long exceptionFail, long threshold) {
     this.appName = appName;
     this.targetBuild = targetBuild;
     this.targetVersion = targetVersion;
