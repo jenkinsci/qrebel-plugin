@@ -26,20 +26,4 @@ public class Issues {
   public final IssuesCount issuesCount;
   public final List<EntryPoint> entryPoints;
 
-  @RequiredArgsConstructor
-  public static class IssuesCount {
-    public final long DURATION;
-    public final long EXCEPTIONS;
-    public final long IO;
-  }
-
-  @RequiredArgsConstructor
-  public static class EntryPoint {
-    public final Duration duration;
-  }
-
-  @RequiredArgsConstructor
-  public static class Duration {
-    public final Long slowestPercentile;
-  }
 }
