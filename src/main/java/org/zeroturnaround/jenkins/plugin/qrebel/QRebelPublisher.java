@@ -80,7 +80,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     @Override
     public @Nonnull
     String getDisplayName() {
-      return PLUGIN_SHORT_NAME;
+      return Messages.QRebelBuilder_DescriptorImpl_DisplayName();
     }
   }
 }
