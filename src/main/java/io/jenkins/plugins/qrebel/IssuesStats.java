@@ -22,7 +22,7 @@ class IssuesStats {
 
   // check if found issues are too slow
   boolean isThresholdProvidedAndExceeded(int threshold) {
-    Optional<List<Long>> entryPointTimes = getEntryPointTimes();
+    Optional<List<Long>> entryPointTimes = getDurations();
     if (entryPointTimes.isPresent()) {
       OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
       if (maxDelayTime.isPresent()) {
@@ -34,7 +34,7 @@ class IssuesStats {
   }
 
   int getSlowestDelay() {
-    Optional<List<Long>> entryPointTimes = getEntryPointTimes();
+    Optional<List<Long>> entryPointTimes = getDurations();
     if (entryPointTimes.isPresent()) {
       OptionalLong maxDelayTime = entryPointTimes.get().stream().mapToLong(v -> v).max();
       if (maxDelayTime.isPresent()) {
@@ -45,13 +45,11 @@ class IssuesStats {
     return 0;
   }
 
-  private Optional<List<Long>> getEntryPointTimes() {
-    List<Long> slowestPercentile = qRData.entryPoints
+  private List<Long> getDurations() {
+    return qRData.entryPoints
         .stream()
         .filter(entryPoint -> entryPoint.duration != null && entryPoint.duration.slowestPercentile != null)
         .map(entryPoint -> entryPoint.duration.slowestPercentile)
         .collect(Collectors.toList());
-    return slowestPercentile.isEmpty() ?
-        Optional.empty() : Optional.of(slowestPercentile);
   }
 }
