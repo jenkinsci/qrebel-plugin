@@ -26,7 +26,7 @@ public interface QRebelRestApi {
                              @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
                              @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
 
-  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}x")
+  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}")
   Issues getIssuesVsThreshold(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
                               @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") long slowRequestsAllowed,
                               @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
