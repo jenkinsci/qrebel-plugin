@@ -29,7 +29,7 @@
     <jenkins-test-harness.version>2.47</jenkins-test-harness.version>
   </properties>
   <name>QRebel Plugin</name>
-  <description>Query your application performance in QRebel and manage your build status.</description>
+  <description>Query your application performance regression in QRebel and manage your build status.</description>
   <licenses>
     <license>
       <name>MIT License</name>
