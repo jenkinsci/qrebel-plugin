@@ -81,7 +81,7 @@ class QRebelStepPerformer {
               " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
           qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, stats.getSlowestDuration()));
 
-      logger.println("For more detail check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
+      logger.println("For more details check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
     }
   }
 
