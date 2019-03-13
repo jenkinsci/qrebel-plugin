@@ -139,12 +139,12 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   // describe failure reason
   private static String getFailureDescription(Issues qRData, Fields fields, long slowestDuration) {
-    return String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>" +
-            "Slow Requests: %d <br/>" +
-            "Excessive IO: %d <br/>" +
-            "Exceptions: %d <br/>" +
-            "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>" +
-            "For full report check your <a href= %s >dashboard</a>.<br/>",
+    return String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>%n" +
+            "Slow Requests: %d <br/>%n" +
+            "Excessive IO: %d <br/>%n" +
+            "Exceptions: %d <br/>%n" +
+            "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>%n" +
+            "For full report check your <a href= %s >dashboard</a>.<br/>%n",
         qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
         fields.slaGlobalLimit, slowestDuration, qRData.appViewUrl);
