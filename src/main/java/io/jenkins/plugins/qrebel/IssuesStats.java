@@ -1,12 +1,12 @@
-package io.jenkins.plugins.qrebel;
-
-/**
+/*
  * Copyright (c) 2018-2019, Rogue Wave Software, Inc., http://www.roguewave.com
  * <p>
  * This software is released under the terms of the
  * MIT license. See https://opensource.org/licenses/MIT
  * for more information.
  */
+package io.jenkins.plugins.qrebel;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
