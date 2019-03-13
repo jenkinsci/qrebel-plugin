@@ -17,6 +17,15 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class Issues {
 
+  public final String appName;
+  public final String baselineBuild;
+  public final String baselineVersion;
+  public final String targetBuild;
+  public final String targetVersion;
+  public final String appViewUrl;
+  public final IssuesCount issuesCount;
+  public final List<EntryPoint> entryPoints;
+
   @RequiredArgsConstructor
   public static class IssuesCount {
     public final long DURATION;
@@ -33,13 +42,4 @@ public class Issues {
   public static class Duration {
     public final Long slowestPercentile;
   }
-
-  public final String appName;
-  public final String baselineBuild;
-  public final String baselineVersion;
-  public final String targetBuild;
-  public final String targetVersion;
-  public final String appViewUrl;
-  public final IssuesCount issuesCount;
-  public final List<EntryPoint> entryPoints;
 }

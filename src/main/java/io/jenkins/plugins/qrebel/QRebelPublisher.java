@@ -30,7 +30,7 @@ import lombok.EqualsAndHashCode;
  * kept in QRebelStepPerformer.
  */
 @Data
-@EqualsAndHashCode(callSuper=true)
+@EqualsAndHashCode(callSuper = true)
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   static final String PLUGIN_SHORT_NAME = "qrebel";

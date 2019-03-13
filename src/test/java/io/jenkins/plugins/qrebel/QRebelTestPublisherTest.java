@@ -166,7 +166,7 @@ public class QRebelTestPublisherTest {
         .withQueryParam("targetVersion", equalTo(TARGET_VERSION))
         .withQueryParam("defaultBaseline", containing(""))
         .withHeader("authorization", equalTo(AUTH_KEY))
-        .withQueryParam("defaultBaseline", withDefaultBaseline? containing("") : absent());
+        .withQueryParam("defaultBaseline", withDefaultBaseline ? containing("") : absent());
     verify(patternBuilder);
   }
 

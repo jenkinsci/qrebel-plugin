@@ -46,6 +46,33 @@ class QRebelStepPerformer {
     throw new IllegalArgumentException("Deprecated Jenkins version. Use 2.1.0+");
   }
 
+  private static Fields resolveFields(QRebelPublisher fields, Run<?, ?> run) {
+    return Fields.builder()
+        .apiKey(resolveEnvVarFromRun(fields.apiKey, run))
+        .appName(resolveEnvVarFromRun(fields.appName, run))
+        .baselineBuild(resolveEnvVarFromRun(fields.baselineBuild, run))
+        .baselineVersion(resolveEnvVarFromRun(fields.baselineVersion, run))
+        .targetBuild(resolveEnvVarFromRun(fields.targetBuild, run))
+        .targetVersion(resolveEnvVarFromRun(fields.targetVersion, run))
+        .serverUrl(resolveEnvVarFromRun(fields.serverUrl, run))
+        .durationFail(fields.durationFail)
+        .exceptionFail(fields.exceptionFail)
+        .ioFail(fields.ioFail)
+        .threshold(fields.threshold)
+        .build();
+  }
+
+  // resolve fields, NotNull
+  private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
+    try {
+      String resolved = EnvVarsResolver.resolveEnvVars(run, value);
+      return resolved == null ? "" : resolved;
+    }
+    catch (EnvInjectException e) {
+      throw new IllegalStateException("Unable to get Env Variable " + value, e);
+    }
+  }
+
   // the main flow
   void perform() throws IOException {
     logger.println("AppName: " + fields.appName);
@@ -102,32 +129,5 @@ class QRebelStepPerformer {
         fields.threshold, slowestDuration, qRData.appViewUrl));
 
     return descriptionBuilder.toString();
-  }
-
-  private static Fields resolveFields(QRebelPublisher fields, Run<?, ?> run) {
-    return Fields.builder()
-        .apiKey(resolveEnvVarFromRun(fields.apiKey, run))
-        .appName(resolveEnvVarFromRun(fields.appName, run))
-        .baselineBuild(resolveEnvVarFromRun(fields.baselineBuild, run))
-        .baselineVersion(resolveEnvVarFromRun(fields.baselineVersion, run))
-        .targetBuild(resolveEnvVarFromRun(fields.targetBuild, run))
-        .targetVersion(resolveEnvVarFromRun(fields.targetVersion, run))
-        .serverUrl(resolveEnvVarFromRun(fields.serverUrl, run))
-        .durationFail(fields.durationFail)
-        .exceptionFail(fields.exceptionFail)
-        .ioFail(fields.ioFail)
-        .threshold(fields.threshold)
-        .build();
-  }
-
-  // resolve fields, NotNull
-  private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
-    try {
-      String resolved = EnvVarsResolver.resolveEnvVars(run, value);
-      return resolved == null? "" : resolved;
-    }
-    catch (EnvInjectException e) {
-      throw new IllegalStateException("Unable to get Env Variable " + value, e);
-    }
   }
 }
