@@ -53,10 +53,10 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
-  final long durationFail;
-  final long ioFail;
-  final long exceptionFail;
-  final long threshold;
+  final long slowRequestsAllowed;
+  final long excessiveIoAllowed;
+  final long exceptionsAllowed;
+  final long slaGlobalLimit;
 
 
   @Symbol(PLUGIN_SHORT_NAME)
@@ -89,31 +89,24 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     Issues qRData;
     if (StringUtils.isNotEmpty(fields.baselineBuild)) {
       restApi.setDefaultBaseline(fields.apiKey, fields.appName, new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
-      qRData = restApi.getIssuesVsBaseline(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.durationFail, fields.ioFail, fields.exceptionFail, PluginVersion.get());
+      qRData = restApi.getIssuesVsBaseline(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.slowRequestsAllowed, fields.excessiveIoAllowed, fields.exceptionsAllowed, PluginVersion.get());
     }
     else {
-      qRData = restApi.getIssuesVsThreshold(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.durationFail, fields.ioFail, fields.exceptionFail, PluginVersion.get());
+      qRData = restApi.getIssuesVsThreshold(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.slowRequestsAllowed, fields.excessiveIoAllowed, fields.exceptionsAllowed, PluginVersion.get());
     }
     IssuesStats stats = new IssuesStats(qRData);
 
-    boolean failBuild = qRData.issuesCount.DURATION > fields.durationFail
-        || qRData.issuesCount.IO > fields.ioFail
-        || qRData.issuesCount.EXCEPTIONS > fields.exceptionFail
-        || stats.isThresholdProvidedAndExceeded(fields.threshold);
+    boolean failBuild = qRData.issuesCount.DURATION > fields.slowRequestsAllowed
+        || qRData.issuesCount.IO > fields.excessiveIoAllowed
+        || qRData.issuesCount.EXCEPTIONS > fields.exceptionsAllowed
+        || stats.isSlaGlobalLimitExceeded(fields.slaGlobalLimit);
 
     if (failBuild) {
       run.setResult(Result.FAILURE);
+      String failureDescription = getFailureDescription(qRData, fields, stats.getSlowestDuration());
       String initialDescription = run.getDescription();
-      run.setDescription(getFailureDescription(qRData, fields, initialDescription, stats.getSlowestDuration()));
-      logger.println("Performance regression have been found in the current build. Failing build.");
-
-      logger.println(String.format("Slow Requests: %d%n" +
-              " Excessive IO: %d %n" +
-              " Exceptions: %d  %n" +
-              " SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms",
-          qRData.issuesCount.DURATION, qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS, fields.threshold, stats.getSlowestDuration()));
-
-      logger.println("For more details check your <a href=\"" + qRData.appViewUrl + "/\">dashboard</a>");
+      run.setDescription(StringUtils.isEmpty(initialDescription) ? failureDescription : initialDescription + "<br/>" + failureDescription);
+      logger.println(failureDescription);
     }
   }
 
@@ -126,10 +119,10 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .targetBuild(resolveEnvVarFromRun(targetBuild, run))
         .targetVersion(resolveEnvVarFromRun(targetVersion, run))
         .serverUrl(resolveEnvVarFromRun(serverUrl, run))
-        .durationFail(durationFail)
-        .exceptionFail(exceptionFail)
-        .ioFail(ioFail)
-        .threshold(threshold)
+        .slowRequestsAllowed(slowRequestsAllowed)
+        .exceptionsAllowed(exceptionsAllowed)
+        .excessiveIoAllowed(excessiveIoAllowed)
+        .slaGlobalLimit(slaGlobalLimit)
         .build();
   }
 
@@ -145,12 +138,8 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   }
 
   // describe failure reason
-  private static String getFailureDescription(Issues qRData, Fields fields, String buildDescription, long slowestDuration) {
-    StringBuilder descriptionBuilder = new StringBuilder();
-    if (StringUtils.isNotEmpty(buildDescription)) {
-      descriptionBuilder.append(buildDescription);
-    }
-    descriptionBuilder.append(String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>" +
+  private static String getFailureDescription(Issues qRData, Fields fields, long slowestDuration) {
+    return String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>" +
             "Slow Requests: %d <br/>" +
             "Excessive IO: %d <br/>" +
             "Exceptions: %d <br/>" +
@@ -158,8 +147,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
             "For full report check your <a href= %s >dashboard</a>.<br/>",
         qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
-        fields.threshold, slowestDuration, qRData.appViewUrl));
-
-    return descriptionBuilder.toString();
+        fields.slaGlobalLimit, slowestDuration, qRData.appViewUrl);
   }
 }

@@ -22,4 +22,4 @@ Exceptions: 2
 SLA global limit (ms): 3770 ms | slowest endpoint time(ms): 3770 ms
 For full report check your <a href="https://hub.qrebel.com/#/12345/petclinic/?baseline=1.4.0rc1&target=1.4.0rc2">dashboard</a>
 ```
-More detail will appear if you click on `Dashboard`
+More detail will appear if you click on `dashboard`

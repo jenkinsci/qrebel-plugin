@@ -59,14 +59,14 @@ public class QRebelTestPublisherTest {
   private static final long TOO_MANY_EXCEPTIONS = IGNORE_ALL_EXCEPTIONS - 1L;
   private static final long FASTEST_REQUEST = 26L;
   private static final long SLOWEST_REQUEST = 3770L;
-  private static final long THRESHOLD_BELOW_FASTEST = FASTEST_REQUEST - 1L;
-  private static final long THRESHOLD_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
+  private static final long GLOBAL_LIMIT_BELOW_FASTEST = FASTEST_REQUEST - 1L;
+  private static final long GLOBAL_LIMIT_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
 
 
   @Test
   public void authFailedOnBaseline() throws Exception {
     stubAuthApi(forbidden());
-    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyBaselineCalled();
   }
 
@@ -74,7 +74,7 @@ public class QRebelTestPublisherTest {
   public void authFailedOnIssues() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(forbidden());
-    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyIssuesCalled(true);
   }
 
@@ -82,42 +82,42 @@ public class QRebelTestPublisherTest {
   public void tooManySlowRequests() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(BASELINE_BUILD, TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
   }
 
   @Test
   public void tooManyExceptions() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
   }
 
   @Test
-  public void thresholdBelowFastest() throws Exception {
+  public void limitBelowFastest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_BELOW_FASTEST));
+    buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_BELOW_FASTEST));
   }
 
   @Test
-  public void thresholdTouchesFastest() throws Exception {
+  public void limitTouchesFastest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
     buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, FASTEST_REQUEST));
   }
 
   @Test
-  public void thresholdTouchesSlowest() throws Exception {
+  public void limitTouchesSlowest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
     buildAndAssertFailure(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, SLOWEST_REQUEST));
   }
 
   @Test
-  public void thresholdAboveSlowest() throws Exception {
+  public void limitAboveSlowest() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyBaselineCalled();
     verifyIssuesCalled(true);
   }
@@ -125,7 +125,7 @@ public class QRebelTestPublisherTest {
   @Test
   public void noDefaultBaseline() throws Exception {
     stubIssuesApi(ok());
-    j.buildAndAssertSuccess(makeProject(NO_BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    j.buildAndAssertSuccess(makeProject(NO_BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyIssuesCalled(false);
   }
 
@@ -133,7 +133,7 @@ public class QRebelTestPublisherTest {
   public void userLimitsSet() throws Exception {
     stubAuthApi(ok());
     stubIssuesApi(ok());
-    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, THRESHOLD_ABOVE_SLOWEST));
+    j.buildAndAssertSuccess(makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyLimitsAndProtocolSet(IGNORE_ALL_SLOW_REQUESTS);
   }
 
@@ -189,10 +189,10 @@ public class QRebelTestPublisherTest {
     env.put("baselineVersion", BASELINE_VERSION);
     env.put("apiKey", AUTH_KEY);
     env.put("serverUrl", wireMockRule.baseUrl());
-    env.put("durationFail", String.valueOf(durationFail));
-    env.put("ioFail", String.valueOf(IGNORE_ALL_IO_ISSUES));
-    env.put("exceptionFail", String.valueOf(exceptionFail));
-    env.put("threshold", String.valueOf(threshold));
+    env.put("slowRequestsAllowed", String.valueOf(durationFail));
+    env.put("excessiveIoAllowed", String.valueOf(IGNORE_ALL_IO_ISSUES));
+    env.put("exceptionsAllowed", String.valueOf(exceptionFail));
+    env.put("slaGlobalLimit", String.valueOf(threshold));
     j.jenkins.getGlobalNodeProperties().add(prop);
   }
 

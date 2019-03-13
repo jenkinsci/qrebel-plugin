@@ -21,8 +21,8 @@ class Fields {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
-  final long durationFail;
-  final long ioFail;
-  final long exceptionFail;
-  final long threshold;
+  final long slowRequestsAllowed;
+  final long excessiveIoAllowed;
+  final long exceptionsAllowed;
+  final long slaGlobalLimit;
 }

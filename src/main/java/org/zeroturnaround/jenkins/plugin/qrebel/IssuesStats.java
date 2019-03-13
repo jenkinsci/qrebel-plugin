@@ -19,7 +19,7 @@ class IssuesStats {
   private final Issues qRData;
 
   // check if found issues are too slow
-  boolean isThresholdProvidedAndExceeded(long threshold) {
+  boolean isSlaGlobalLimitExceeded(long threshold) {
     return threshold > 0L && threshold <= getSlowestDuration();
   }
 
