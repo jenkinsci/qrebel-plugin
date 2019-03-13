@@ -1,11 +1,11 @@
 # Jenkins QRebel Plugin
 
 ## What is Jenkins QRebel Plugin?
-This Jenkins Plugin collects application performance data from [QRebel](https://zeroturnaround.com/software/qrebel/) and marks the build as failed if its performance degrades.
+This Jenkins Plugin collects application performance data from [QRebel](https://qrebel.com/) and marks the build as failed if its performance degrades.
 
 ## How to use it?
 ### Attach QRebel agent
-Attach the agent to existing tests to start monitoring your application performance. See [QRebel Quick Start](https://zeroturnaround.com/software/qrebel/quick-start/) guide. Configure your app name eg. `petclinic`. Label your app changes with builds eg. `1.4.0rc1`, `1.4.0rc2` etc.
+Attach the agent to existing tests to start monitoring your application performance. See [QRebel Quick Start](https://qrebel.com//quick-start/) guide. Configure your app name eg. `petclinic`. Label your app changes with builds eg. `1.4.0rc1`, `1.4.0rc2` etc.
 ### Add A QRebel post-build action
 Add a new post-build action `Monitor performance with QRebel`. This action will compare the performance of a baseline build and a target build.   
 * Type the configured app name to `Application name`, eg. `petclinic`
