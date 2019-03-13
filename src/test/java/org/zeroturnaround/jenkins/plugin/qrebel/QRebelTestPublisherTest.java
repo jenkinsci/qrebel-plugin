@@ -190,7 +190,7 @@ public class QRebelTestPublisherTest {
     env.put("apiKey", AUTH_KEY);
     env.put("serverUrl", wireMockRule.baseUrl());
     env.put("slowRequestsAllowed", String.valueOf(durationFail));
-    env.put("excessiveIoAllowed", String.valueOf(IGNORE_ALL_IO_ISSUES));
+    env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_IO_ISSUES));
     env.put("exceptionsAllowed", String.valueOf(exceptionFail));
     env.put("slaGlobalLimit", String.valueOf(threshold));
     j.jenkins.getGlobalNodeProperties().add(prop);

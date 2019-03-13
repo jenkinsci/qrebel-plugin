@@ -39,18 +39,16 @@
     <f:advanced>
         <f:block>
             <b>Performance Gate Settings</b>
-            <f:entry title="${%DurationFail}" field="durationFail">
+            <f:entry title="${%slowRequestsAllowed}" field="slowRequestsAllowed">
                 <f:number clazz="number" default="0"/>
             </f:entry>
-            <f:entry title="${%IOFail}" field="ioFail">
+            <f:entry title="${%excessiveIoAllowed}" field="excessiveIoAllowed">
                 <f:number clazz="number" default="0"/>
             </f:entry>
-            <f:entry title="${%ExceptionFail}" field="exceptionFail">
+            <f:entry title="${%exceptionsAllowed}" field="exceptionsAllowed">
                 <f:number clazz="number" default="0"/>
             </f:entry>
-        </f:block>
-        <f:block>
-            <f:entry title="${%Threshold}" field="threshold">
+            <f:entry title="${%slaGlobalLimit}" field="slaGlobalLimit">
                 <f:number clazz="number" default="0"/>
             </f:entry>
         </f:block>
