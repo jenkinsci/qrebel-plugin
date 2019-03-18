@@ -7,6 +7,8 @@
  */
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
+import org.apache.commons.lang.StringUtils;
+
 import hudson.Plugin;
 import jenkins.model.Jenkins;
 
@@ -21,7 +23,9 @@ class PluginVersion {
     if (version == null) {
       Plugin qrebelPlugin = Jenkins.get().getPlugin(QRebelPublisher.PLUGIN_SHORT_NAME);
       if (qrebelPlugin != null) {
-        version = qrebelPlugin.getWrapper().getVersion();
+        String rawVersion = qrebelPlugin.getWrapper().getVersion();
+        // rawVersion can be '1.0-SNAPSHOT (some random id)' - drop the random part
+        version = StringUtils.substringBefore(rawVersion, " ");
       }
     }
     return version;

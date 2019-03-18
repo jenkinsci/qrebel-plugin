@@ -13,6 +13,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
@@ -178,7 +180,7 @@ public class QRebelTestPublisherTest {
         .withQueryParam("slowRequestsAllowed", equalTo(String.valueOf(slowRequestsAllowed)))
         .withQueryParam("excessiveIOAllowed", equalTo(String.valueOf(IGNORE_ALL_IO_ISSUES)))
         .withQueryParam("exceptionsAllowed", equalTo(String.valueOf(IGNORE_ALL_EXCEPTIONS)))
-        .withQueryParam("jenkinsPluginVersion", containing("1"));
+        .withQueryParam("jenkinsPluginVersion", matching(".+"));
     verify(patternBuilder);
   }
 
