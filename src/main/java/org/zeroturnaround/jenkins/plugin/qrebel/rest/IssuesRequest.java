@@ -12,12 +12,17 @@ import lombok.NonNull;
 
 @Builder
 public class IssuesRequest {
-  @NonNull final String targetBuild;
+  @NonNull
+  final String targetBuild;
   final String targetVersion;
-  @NonNull final Long slowRequestsAllowed;
-  @NonNull final Long excessiveIOAllowed;
-  @NonNull final Long exceptionsAllowed;
-  @NonNull final String jenkinsPluginVersion;
+  @NonNull
+  final Long slowRequestsAllowed;
+  @NonNull
+  final Long excessiveIOAllowed;
+  @NonNull
+  final Long exceptionsAllowed;
+  @NonNull
+  final String jenkinsPluginVersion;
   final String defaultBaseline;
   final String baselineBuild;
   final String baselineVersion;

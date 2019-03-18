@@ -8,7 +8,6 @@
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import java.util.stream.LongStream;
-
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.Issues;
 
 import lombok.Value;

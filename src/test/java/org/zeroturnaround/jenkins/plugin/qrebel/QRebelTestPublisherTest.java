@@ -38,19 +38,12 @@ import hudson.slaves.EnvironmentVariablesNodeProperty;
 
 public class QRebelTestPublisherTest {
 
-  @Rule
-  public JenkinsRule j = new JenkinsRule();
-  @Rule
-  public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
-
   private static final String APP_NAME = "foobar";
   private static final String TARGET_BUILD = "2.0.6RC3";
   private static final String TARGET_VERSION = "1";
   private static final String BASELINE_BUILD = "2.05RC1";
   private static final String BASELINE_VERSION = TARGET_VERSION;
-
   private static final String AUTH_KEY = "correct-key";
-
   private static final long IGNORE_ALL_SLOW_REQUESTS = 15L;
   private static final long TOO_MANY_SLOW_REQUESTS = IGNORE_ALL_SLOW_REQUESTS - 1L;
   private static final long IGNORE_ALL_IO_ISSUES = 0L;
@@ -60,6 +53,10 @@ public class QRebelTestPublisherTest {
   private static final long SLOWEST_REQUEST = 3770L;
   private static final long GLOBAL_LIMIT_BELOW_FASTEST = FASTEST_REQUEST - 1L;
   private static final long GLOBAL_LIMIT_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
+  @Rule
+  public JenkinsRule j = new JenkinsRule();
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
 
   @Test
   public void authFailedOnIssues() throws Exception {

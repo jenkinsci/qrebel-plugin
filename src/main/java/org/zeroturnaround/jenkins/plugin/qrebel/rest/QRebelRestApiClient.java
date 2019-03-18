@@ -8,7 +8,6 @@
 package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import org.apache.commons.io.IOUtils;
 
 import feign.Feign;
