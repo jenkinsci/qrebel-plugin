@@ -8,11 +8,13 @@
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import lombok.Builder;
+import lombok.experimental.Wither;
 
 /**
  * Plugin configuration
  */
 @Builder
+@Wither
 class Fields {
   final String appName;
   final String targetBuild;
@@ -26,4 +28,7 @@ class Fields {
   final long excessiveIoAllowed;
   final long exceptionsAllowed;
   final long slaGlobalLimit;
+  final boolean slowRequests;
+  final boolean excessiveIo;
+  final boolean exceptions;
 }

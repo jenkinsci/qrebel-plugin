@@ -58,6 +58,9 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final long excessiveIoAllowed;
   final long exceptionsAllowed;
   final long slaGlobalLimit;
+  final boolean slowRequests;
+  final boolean excessiveIo;
+  final boolean exceptions;
 
 
   @Symbol(PLUGIN_SHORT_NAME)
@@ -79,6 +82,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
     PrintStream logger = listener.getLogger();
     Fields fields = resolveFields(run);
+    fields = interpretEmptyIssueTypes(fields);
 
     logger.println("AppName: " + fields.appName);
     logger.println("Baseline Build: " + fields.baselineBuild);
@@ -138,7 +142,19 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .excessiveIoAllowed(excessiveIoAllowed)
         .slaGlobalLimit(slaGlobalLimit)
         .comparisonStrategy(ComparisonStrategy.get(comparisonStrategy))
+        .slowRequests(slowRequests)
+        .excessiveIo(excessiveIo)
+        .exceptions(exceptions)
         .build();
+  }
+
+  // no issue types == all issue types
+  private static Fields interpretEmptyIssueTypes(Fields original) {
+    boolean noIssueTypesSelected = !original.exceptions && !original.excessiveIo && !original.slowRequests;
+    return original
+        .withSlowRequests(original.slowRequests || noIssueTypesSelected)
+        .withExcessiveIo(original.excessiveIo || noIssueTypesSelected)
+        .withExceptions(original.exceptions || noIssueTypesSelected);
   }
 
   // resolve fields
