@@ -21,6 +21,7 @@ class Fields {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
+  final ComparisonStrategy comparisonStrategy;
   final long slowRequestsAllowed;
   final long excessiveIoAllowed;
   final long exceptionsAllowed;

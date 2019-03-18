@@ -9,6 +9,7 @@ package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
 import feign.Headers;
 import feign.Param;
+import feign.QueryMap;
 import feign.RequestLine;
 
 /**
@@ -17,18 +18,6 @@ import feign.RequestLine;
 @Headers({"Content-Type: application/json", "authorization: {apiKey}"})
 public interface QRebelRestApi {
 
-  @RequestLine("PUT /api/applications/{appName}/baselines/default/")
-  void setDefaultBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, BuildClassifier classifier);
-
-  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}&defaultBaseline")
-  Issues getIssuesVsBaseline(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                             @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") long slowRequestsAllowed,
-                             @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
-                             @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
-
-  @RequestLine("GET /api/applications/{appName}/issues/?targetBuild={targetBuild}&targetVersion={targetVersion}&slowRequestsAllowed={slowRequestsAllowed}&excessiveIOAllowed={excessiveIOAllowed}&exceptionsAllowed={exceptionsAllowed}&jenkinsPluginVersion={jenkinsPluginVersion}")
-  Issues getIssuesVsThreshold(@Param("apiKey") String apiKey, @Param("appName") String appName, @Param("targetBuild") String targetBuild,
-                              @Param("targetVersion") String targetVersion, @Param("slowRequestsAllowed") long slowRequestsAllowed,
-                              @Param("excessiveIOAllowed") long excessiveIOAllowed, @Param("exceptionsAllowed") long exceptionsAllowed,
-                              @Param("jenkinsPluginVersion") String jenkinsPluginVersion);
+  @RequestLine("GET /api/applications/{appName}/issues/")
+  Issues getIssues(@Param("apiKey") String apiKey, @Param("appName") String appName, @QueryMap IssuesRequest request);
 }

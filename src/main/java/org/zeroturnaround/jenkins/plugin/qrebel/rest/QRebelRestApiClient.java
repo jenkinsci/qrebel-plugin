@@ -8,13 +8,13 @@
 package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import org.apache.commons.io.IOUtils;
 
 import feign.Feign;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import feign.gson.GsonDecoder;
-import feign.gson.GsonEncoder;
 
 /**
  * Configures Open FEIGN
@@ -24,7 +24,6 @@ public class QRebelRestApiClient {
   public static QRebelRestApi create(String serverUrl) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
-        .encoder(new GsonEncoder())
         .decoder(new GsonDecoder())
         .target(QRebelRestApi.class, serverUrl);
   }

@@ -15,8 +15,8 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.zeroturnaround.jenkins.plugin.qrebel.rest.BuildClassifier;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.Issues;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesRequest;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApi;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApiClient;
 
@@ -53,6 +53,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final String baselineVersion;
   final String apiKey;
   final String serverUrl;
+  final String comparisonStrategy;
   final long slowRequestsAllowed;
   final long excessiveIoAllowed;
   final long exceptionsAllowed;
@@ -78,7 +79,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
     PrintStream logger = listener.getLogger();
     Fields fields = resolveFields(run);
-    QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl);
 
     logger.println("AppName: " + fields.appName);
     logger.println("Baseline Build: " + fields.baselineBuild);
@@ -86,14 +86,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
 
-    Issues qRData;
-    if (StringUtils.isNotEmpty(fields.baselineBuild)) {
-      restApi.setDefaultBaseline(fields.apiKey, fields.appName, new BuildClassifier(fields.baselineBuild, fields.baselineVersion));
-      qRData = restApi.getIssuesVsBaseline(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.slowRequestsAllowed, fields.excessiveIoAllowed, fields.exceptionsAllowed, PluginVersion.get());
-    }
-    else {
-      qRData = restApi.getIssuesVsThreshold(fields.apiKey, fields.appName, fields.targetBuild, fields.targetVersion, fields.slowRequestsAllowed, fields.excessiveIoAllowed, fields.exceptionsAllowed, PluginVersion.get());
-    }
+    Issues qRData = getIssues(fields);
     IssuesStats stats = new IssuesStats(qRData);
 
     boolean failBuild = qRData.issuesCount.DURATION > fields.slowRequestsAllowed
@@ -110,6 +103,27 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     }
   }
 
+  // Get issues via REST
+  private static Issues getIssues(Fields fields) {
+    QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl);
+    IssuesRequest.IssuesRequestBuilder requestBuilder = IssuesRequest.builder()
+        .targetBuild(fields.targetBuild)
+        .targetVersion(fields.targetVersion)
+        .slowRequestsAllowed(fields.slowRequestsAllowed)
+        .excessiveIOAllowed(fields.excessiveIoAllowed)
+        .exceptionsAllowed(fields.exceptionsAllowed)
+        .jenkinsPluginVersion(PluginVersion.get());
+    if (ComparisonStrategy.BASELINE.equals(fields.comparisonStrategy)) {
+      requestBuilder = requestBuilder
+          .baselineBuild(fields.baselineBuild)
+          .baselineVersion(fields.baselineVersion);
+    }
+    else if (ComparisonStrategy.DEFAULT_BASELINE.equals(fields.comparisonStrategy)) {
+      requestBuilder = requestBuilder.defaultBaseline("");
+    }
+    return restApi.getIssues(fields.apiKey, fields.appName, requestBuilder.build());
+  }
+
   private Fields resolveFields(Run<?, ?> run) {
     return Fields.builder()
         .apiKey(resolveEnvVarFromRun(apiKey, run))
@@ -123,14 +137,14 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .exceptionsAllowed(exceptionsAllowed)
         .excessiveIoAllowed(excessiveIoAllowed)
         .slaGlobalLimit(slaGlobalLimit)
+        .comparisonStrategy(ComparisonStrategy.get(comparisonStrategy))
         .build();
   }
 
-  // resolve fields, NotNull
+  // resolve fields
   private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
     try {
-      String resolved = EnvVarsResolver.resolveEnvVars(run, value);
-      return resolved == null ? "" : resolved;
+      return EnvVarsResolver.resolveEnvVars(run, value);
     }
     catch (EnvInjectException e) {
       throw new IllegalStateException("Unable to get Env Variable " + value, e);
@@ -148,5 +162,10 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
         fields.slaGlobalLimit, slowestDuration, qRData.appViewUrl);
+  }
+
+  // Helper method for the jelly view to determine comparisonStrategy
+  public String isStrategy(String comparisonStrategy) {
+    return StringUtils.equalsIgnoreCase(comparisonStrategy, this.comparisonStrategy) ? "true" : "";
   }
 }
