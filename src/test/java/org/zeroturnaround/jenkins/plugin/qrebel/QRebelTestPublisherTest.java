@@ -14,7 +14,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.forbidden;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
-import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
@@ -37,6 +36,7 @@ import hudson.EnvVars;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.tasks.Publisher;
 
 public class QRebelTestPublisherTest {
 
@@ -48,7 +48,7 @@ public class QRebelTestPublisherTest {
   private static final String AUTH_KEY = "correct-key";
   private static final long IGNORE_ALL_SLOW_REQUESTS = 15L;
   private static final long TOO_MANY_SLOW_REQUESTS = IGNORE_ALL_SLOW_REQUESTS - 1L;
-  private static final long IGNORE_ALL_IO_ISSUES = 0L;
+  private static final long IGNORE_ALL_EXCESSIVE_IO_ISSUES = 0L;
   private static final long IGNORE_ALL_EXCEPTIONS = 2L;
   private static final long TOO_MANY_EXCEPTIONS = IGNORE_ALL_EXCEPTIONS - 1L;
   private static final long FASTEST_REQUEST = 26L;
@@ -178,13 +178,13 @@ public class QRebelTestPublisherTest {
   private void verifyLimitsAndProtocolSet(long slowRequestsAllowed) {
     RequestPatternBuilder patternBuilder = getRequestedFor(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
         .withQueryParam("slowRequestsAllowed", equalTo(String.valueOf(slowRequestsAllowed)))
-        .withQueryParam("excessiveIOAllowed", equalTo(String.valueOf(IGNORE_ALL_IO_ISSUES)))
+        .withQueryParam("excessiveIOAllowed", equalTo(String.valueOf(IGNORE_ALL_EXCESSIVE_IO_ISSUES)))
         .withQueryParam("exceptionsAllowed", equalTo(String.valueOf(IGNORE_ALL_EXCEPTIONS)))
         .withQueryParam("jenkinsPluginVersion", matching(".+"));
     verify(patternBuilder);
   }
 
-  private void setEnvVariables(String baselineBuild, long durationFail, long exceptionFail, long threshold, ComparisonStrategy strategy) {
+  private void setEnvVariables(String baselineBuild, long slowRequestsAllowed, long exceptionsAllowed, long threshold, ComparisonStrategy strategy) {
     EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
     EnvVars env = prop.getEnvVars();
     env.put("appName", APP_NAME);
@@ -194,9 +194,9 @@ public class QRebelTestPublisherTest {
     env.put("baselineVersion", BASELINE_VERSION);
     env.put("apiKey", AUTH_KEY);
     env.put("serverUrl", wireMockRule.baseUrl());
-    env.put("slowRequestsAllowed", String.valueOf(durationFail));
-    env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_IO_ISSUES));
-    env.put("exceptionsAllowed", String.valueOf(exceptionFail));
+    env.put("slowRequestsAllowed", String.valueOf(slowRequestsAllowed));
+    env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_EXCESSIVE_IO_ISSUES));
+    env.put("exceptionsAllowed", String.valueOf(exceptionsAllowed));
     env.put("slaGlobalLimit", String.valueOf(threshold));
     env.put("comparisonStrategy", strategy.getName());
     j.jenkins.getGlobalNodeProperties().add(prop);
@@ -206,8 +206,8 @@ public class QRebelTestPublisherTest {
     return makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE);
   }
 
-  private FreeStyleProject makeWithAllowedIssues(long durationFail, long exceptionFail) throws IOException {
-    return makeProject(BASELINE_BUILD, durationFail, exceptionFail, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE);
+  private FreeStyleProject makeWithAllowedIssues(long slowRequestsAllowed, long exceptionsAllowed) throws IOException {
+    return makeProject(BASELINE_BUILD, slowRequestsAllowed, exceptionsAllowed, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE);
   }
 
   private FreeStyleProject makeWithThreshold(long threshold) throws IOException {
@@ -218,10 +218,12 @@ public class QRebelTestPublisherTest {
     return makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, strategy);
   }
 
-  private FreeStyleProject makeProject(String baselineBuild, long durationFail, long exceptionFail, long threshold, ComparisonStrategy strategy) throws IOException {
-    setEnvVariables(baselineBuild, durationFail, exceptionFail, threshold, strategy);
+  private FreeStyleProject makeProject(String baselineBuild, long slowRequestsAllowed, long exceptionsAllowed, long threshold, ComparisonStrategy strategy) throws IOException {
+    setEnvVariables(baselineBuild, slowRequestsAllowed, exceptionsAllowed, threshold, strategy);
     FreeStyleProject project = j.createFreeStyleProject();
-    project.getPublishersList().add(new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, baselineBuild, BASELINE_VERSION, AUTH_KEY, wireMockRule.baseUrl(), strategy.getName(), durationFail, IGNORE_ALL_IO_ISSUES, exceptionFail, threshold));
+    Publisher qrebel = new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, baselineBuild, BASELINE_VERSION,
+        AUTH_KEY, wireMockRule.baseUrl(), strategy.getName(), slowRequestsAllowed, IGNORE_ALL_EXCESSIVE_IO_ISSUES, exceptionsAllowed, threshold);
+    project.getPublishersList().add(qrebel);
     return project;
   }
 
