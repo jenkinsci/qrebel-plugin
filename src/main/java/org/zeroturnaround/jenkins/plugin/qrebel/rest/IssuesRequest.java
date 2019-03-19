@@ -26,4 +26,5 @@ public class IssuesRequest {
   final String defaultBaseline;
   final String baselineBuild;
   final String baselineVersion;
+  final String issues;
 }

@@ -28,7 +28,5 @@ class Fields {
   final long excessiveIoAllowed;
   final long exceptionsAllowed;
   final long slaGlobalLimit;
-  final boolean slowRequests;
-  final boolean excessiveIo;
-  final boolean exceptions;
+  final String issueTypes;
 }

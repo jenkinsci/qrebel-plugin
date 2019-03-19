@@ -8,9 +8,11 @@
 package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import org.apache.commons.io.IOUtils;
 
 import feign.Feign;
+import feign.Logger;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 import feign.gson.GsonDecoder;
@@ -20,9 +22,16 @@ import feign.gson.GsonDecoder;
  */
 public class QRebelRestApiClient {
   // create a new client instance
-  public static QRebelRestApi create(String serverUrl) {
+  public static QRebelRestApi create(String serverUrl, PrintStream logger) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
+        .logLevel(Logger.Level.BASIC)
+        .logger(new Logger() {
+          @Override
+          protected void log(String configKey, String format, Object... args) {
+            logger.format(methodTag(configKey) + format + "%n", args);
+          }
+        })
         .decoder(new GsonDecoder())
         .target(QRebelRestApi.class, serverUrl);
   }

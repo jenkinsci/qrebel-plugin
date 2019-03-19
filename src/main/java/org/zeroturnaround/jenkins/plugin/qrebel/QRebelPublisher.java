@@ -10,6 +10,8 @@ package org.zeroturnaround.jenkins.plugin.qrebel;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.lib.envinject.EnvInjectException;
@@ -58,9 +60,9 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final long excessiveIoAllowed;
   final long exceptionsAllowed;
   final long slaGlobalLimit;
-  final boolean slowRequests;
-  final boolean excessiveIo;
-  final boolean exceptions;
+  final boolean DURATION;
+  final boolean IO;
+  final boolean EXCEPTIONS;
 
 
   @Symbol(PLUGIN_SHORT_NAME)
@@ -82,7 +84,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
     PrintStream logger = listener.getLogger();
     Fields fields = resolveFields(run);
-    fields = interpretEmptyIssueTypes(fields);
 
     logger.println("AppName: " + fields.appName);
     logger.println("Baseline Build: " + fields.baselineBuild);
@@ -90,7 +91,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
 
-    Issues qRData = getIssues(fields);
+    Issues qRData = getIssues(fields, logger);
     IssuesStats stats = new IssuesStats(qRData);
 
     boolean failBuild = qRData.issuesCount.DURATION > fields.slowRequestsAllowed
@@ -108,15 +109,16 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   }
 
   // Get issues via REST
-  private static Issues getIssues(Fields fields) {
-    QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl);
+  private static Issues getIssues(Fields fields, PrintStream logger) {
+    QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl, logger);
     IssuesRequest.IssuesRequestBuilder requestBuilder = IssuesRequest.builder()
         .targetBuild(fields.targetBuild)
         .targetVersion(fields.targetVersion)
         .slowRequestsAllowed(fields.slowRequestsAllowed)
         .excessiveIOAllowed(fields.excessiveIoAllowed)
         .exceptionsAllowed(fields.exceptionsAllowed)
-        .jenkinsPluginVersion(PluginVersion.get());
+        .jenkinsPluginVersion(PluginVersion.get())
+        .issues(fields.issueTypes);
     if (ComparisonStrategy.BASELINE.equals(fields.comparisonStrategy)) {
       requestBuilder = requestBuilder
           .baselineBuild(fields.baselineBuild)
@@ -126,6 +128,20 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
       requestBuilder = requestBuilder.defaultBaseline("");
     }
     return restApi.getIssues(fields.apiKey, fields.appName, requestBuilder.build());
+  }
+
+  private String toIssueTypes() {
+    List<String> issueTypes = new ArrayList<>();
+    if (DURATION) {
+      issueTypes.add(IssueType.DURATION.getName());
+    }
+    if (IO) {
+      issueTypes.add(IssueType.IO.getName());
+    }
+    if (EXCEPTIONS) {
+      issueTypes.add(IssueType.EXCEPTIONS.getName());
+    }
+    return StringUtils.join(issueTypes, ",");
   }
 
   private Fields resolveFields(Run<?, ?> run) {
@@ -142,19 +158,8 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .excessiveIoAllowed(excessiveIoAllowed)
         .slaGlobalLimit(slaGlobalLimit)
         .comparisonStrategy(ComparisonStrategy.get(comparisonStrategy))
-        .slowRequests(slowRequests)
-        .excessiveIo(excessiveIo)
-        .exceptions(exceptions)
+        .issueTypes(toIssueTypes())
         .build();
-  }
-
-  // no issue types == all issue types
-  private static Fields interpretEmptyIssueTypes(Fields original) {
-    boolean noIssueTypesSelected = !original.exceptions && !original.excessiveIo && !original.slowRequests;
-    return original
-        .withSlowRequests(original.slowRequests || noIssueTypesSelected)
-        .withExcessiveIo(original.excessiveIo || noIssueTypesSelected)
-        .withExceptions(original.exceptions || noIssueTypesSelected);
   }
 
   // resolve fields

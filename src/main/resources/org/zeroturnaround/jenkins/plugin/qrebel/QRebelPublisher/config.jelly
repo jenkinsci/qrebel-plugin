@@ -41,14 +41,14 @@
   </f:section>
 
   <f:section title="${%IssueTypes}">
-    <f:entry title="${%SlowRequests}" field="slowRequests">
-      <f:checkbox field="slowRequests" checked="${slowRequests}" default="true"/>
+    <f:entry title="${%SlowRequests}" field="DURATION">
+      <f:checkbox field="DURATION" checked="${DURATION}" default="true"/>
     </f:entry>
-    <f:entry title="${%ExcessiveIo}" field="excessiveIo">
-      <f:checkbox field="excessiveIo" checked="${excessiveIo}" default="true"/>
+    <f:entry title="${%ExcessiveIo}" field="IO">
+      <f:checkbox field="IO" checked="${IO}" default="true"/>
     </f:entry>
-    <f:entry title="${%Exceptions}" field="exceptions">
-      <f:checkbox field="exceptions" checked="${exceptions}" default="true"/>
+    <f:entry title="${%Exceptions}" field="EXCEPTIONS">
+      <f:checkbox field="EXCEPTIONS" checked="${EXCEPTIONS}" default="true"/>
     </f:entry>
   </f:section>
 
