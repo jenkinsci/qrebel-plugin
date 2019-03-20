@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
  * Issues data parsed from JSON
  */
 @RequiredArgsConstructor
-public class Issues {
+public class IssuesResponse {
 
   public final String appName;
   public final String baselineBuild;

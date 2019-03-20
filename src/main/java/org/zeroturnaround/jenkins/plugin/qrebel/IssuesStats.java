@@ -8,14 +8,14 @@
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
 import java.util.stream.LongStream;
-import org.zeroturnaround.jenkins.plugin.qrebel.rest.Issues;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesResponse;
 
 import lombok.Value;
 
 @Value
 class IssuesStats {
 
-  private final Issues qRData;
+  private final IssuesResponse qRData;
 
   // check if found issues are too slow
   boolean isSlaGlobalLimitExceeded(long threshold) {

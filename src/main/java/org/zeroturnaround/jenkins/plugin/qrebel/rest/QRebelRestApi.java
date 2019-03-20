@@ -19,5 +19,5 @@ import feign.RequestLine;
 public interface QRebelRestApi {
 
   @RequestLine("GET /api/applications/{appName}/issues/")
-  Issues getIssues(@Param("apiKey") String apiKey, @Param("appName") String appName, @QueryMap IssuesRequest request);
+  IssuesResponse getIssues(@Param("apiKey") String apiKey, @Param("appName") String appName, @QueryMap IssuesRequest request);
 }

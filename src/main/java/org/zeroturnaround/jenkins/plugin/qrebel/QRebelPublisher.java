@@ -17,7 +17,7 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.zeroturnaround.jenkins.plugin.qrebel.rest.Issues;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesResponse;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesRequest;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApi;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApiClient;
@@ -91,7 +91,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
 
-    Issues qRData = getIssues(fields, logger);
+    IssuesResponse qRData = getIssues(fields, logger);
     IssuesStats stats = new IssuesStats(qRData);
 
     boolean failBuild = qRData.issuesCount.DURATION > fields.slowRequestsAllowed
@@ -109,7 +109,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   }
 
   // Get issues via REST
-  private static Issues getIssues(Fields fields, PrintStream logger) {
+  private static IssuesResponse getIssues(Fields fields, PrintStream logger) {
     QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl, logger);
     IssuesRequest.IssuesRequestBuilder requestBuilder = IssuesRequest.builder()
         .targetBuild(fields.targetBuild)
@@ -173,7 +173,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   }
 
   // describe failure reason
-  private static String getFailureDescription(Issues qRData, Fields fields, long slowestDuration) {
+  private static String getFailureDescription(IssuesResponse qRData, Fields fields, long slowestDuration) {
     return String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>%n" +
             "Slow Requests: %d <br/>%n" +
             "Excessive IO: %d <br/>%n" +
