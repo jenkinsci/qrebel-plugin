@@ -1,0 +1,71 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core"
+         xmlns:f="/lib/form">
+
+  <f:section title="${%ApplicationConnection}">
+    <f:entry title="${%ApplicationName}" field="appName">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%ApiToken}" field="apiToken">
+      <f:password field="apiToken"/>
+    </f:entry>
+    <f:entry title="${%ServerUrl}" field="serverUrl">
+      <f:textbox default="https://hub.qrebel.com"/>
+    </f:entry>
+  </f:section>
+
+
+  <f:section title="${%TargetBuild}">
+    <f:entry title="${%Build}" field="targetBuild" mandatory="true">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Version}" field="targetVersion">
+      <f:textbox/>
+    </f:entry>
+  </f:section>
+
+  <f:section title="${%ComparisonStrategy}">
+    <!-- Selected by default -->
+    <f:radioBlock name="comparisonStrategy" value="BASELINE" title="${%StrategyBaseline}" checked="${instance == null || instance.isStrategy('BASELINE')}" inline="true">
+      <f:nested>
+        <f:entry title="${%Build}" field="baselineBuild" mandatory="true">
+          <f:textbox/>
+        </f:entry>
+        <f:entry title="${%Version}" field="baselineVersion">
+          <f:textbox/>
+        </f:entry>
+      </f:nested>
+    </f:radioBlock>
+    <f:radioBlock name="comparisonStrategy" value="DEFAULT_BASELINE" title="${%StrategyDefaultBaseline}" checked="${instance.isStrategy('DEFAULT_BASELINE')}" inline="true"/>
+    <f:radioBlock name="comparisonStrategy" value="THRESHOLD" title="${%StrategyThreshold}" checked="${instance.isStrategy('THRESHOLD')}" inline="true"/>
+  </f:section>
+
+  <f:section title="${%IssueTypes}">
+    <f:entry title="${%SlowRequests}" field="DURATION">
+      <f:checkbox field="DURATION" checked="${DURATION}" default="true"/>
+    </f:entry>
+    <f:entry title="${%ExcessiveIo}" field="IO">
+      <f:checkbox field="IO" checked="${IO}" default="true"/>
+    </f:entry>
+    <f:entry title="${%Exceptions}" field="EXCEPTIONS">
+      <f:checkbox field="EXCEPTIONS" checked="${EXCEPTIONS}" default="true"/>
+    </f:entry>
+  </f:section>
+
+  <f:advanced>
+    <f:section title="${%PerformanceGateSettings}">
+      <f:entry title="${%slowRequestsAllowed}" field="slowRequestsAllowed">
+        <f:number clazz="number" default="0"/>
+      </f:entry>
+      <f:entry title="${%excessiveIoAllowed}" field="excessiveIoAllowed">
+        <f:number clazz="number" default="0"/>
+      </f:entry>
+      <f:entry title="${%exceptionsAllowed}" field="exceptionsAllowed">
+        <f:number clazz="number" default="0"/>
+      </f:entry>
+      <f:entry title="${%slaGlobalLimit}" field="slaGlobalLimit">
+        <f:number clazz="number" default="0"/>
+      </f:entry>
+    </f:section>
+  </f:advanced>
+</j:jelly>

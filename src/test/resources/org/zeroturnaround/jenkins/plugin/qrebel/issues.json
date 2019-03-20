@@ -1,0 +1,144 @@
+{
+  "appName": "foo",
+  "targetBuild": "2.0.6RC3",
+  "targetVersion": "1",
+  "baselineBuild": "2.0.6RC1",
+  "baselineVersion": "1",
+  "issuesCount": {
+    "DURATION": 15,
+    "EXCEPTIONS": 2
+  },
+  "entryPoints": [
+    {
+      "name": "GET /webjars/bootstrap/fonts/glyphicons-halflings-regular.woff2",
+      "hits": 8,
+      "duration": {
+        "slowestPercentile": 102,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /actuator/info",
+      "hits": 2,
+      "duration": {
+        "slowestPercentile": 148,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /api/customer/owners",
+      "hits": 11,
+      "duration": {
+        "slowestPercentile": 187,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /scripts/fragments/footer.html",
+      "hits": 23,
+      "duration": {
+        "slowestPercentile": 39,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /scripts/fragments/welcome.html",
+      "hits": 23,
+      "duration": {
+        "slowestPercentile": 26,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /actuator/health",
+      "hits": 21,
+      "duration": {
+        "slowestPercentile": 3354,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /scripts/vet-list/vet-list.template.html",
+      "hits": 20,
+      "duration": {
+        "slowestPercentile": 30,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /actuator",
+      "hits": 2,
+      "duration": {
+        "slowestPercentile": 282,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /fonts/montserrat-webfont.woff",
+      "hits": 8,
+      "duration": {
+        "slowestPercentile": 38,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /fonts/varela_round-webfont.woff",
+      "hits": 8,
+      "duration": {
+        "slowestPercentile": 95,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /api/vet/vets",
+      "hits": 15,
+      "duration": {
+        "slowestPercentile": 121,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /",
+      "hits": 8,
+      "duration": {
+        "slowestPercentile": 1286,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "HTTP /error",
+      "hits": 10,
+      "duration": {
+        "slowestPercentile": 3770,
+        "scopePercentage": 100
+      },
+      "exceptions": [
+        {
+          "name": "ClientException at LoadBalancerContext.getServerFromLoadBalancer()",
+          "count": 5
+        },
+        {
+          "name": "ZuulException at SendErrorFilter.findZuulException()",
+          "count": 5
+        }
+      ]
+    },
+    {
+      "name": "GET /scripts/owner-list/owner-list.template.html",
+      "hits": 16,
+      "duration": {
+        "slowestPercentile": 9,
+        "scopePercentage": 100
+      }
+    },
+    {
+      "name": "GET /scripts/fragments/nav.html",
+      "hits": 24,
+      "duration": {
+        "slowestPercentile": 43,
+        "scopePercentage": 100
+      }
+    }
+  ],
+  "appViewUrl": "http://localhost:12345/#/12345/app/foo?baseline=2.05RC1&target=2.0.6RC3&isBuild=11"
+}
