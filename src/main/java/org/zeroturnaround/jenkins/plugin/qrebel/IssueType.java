@@ -7,14 +7,8 @@
  */
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 // Which issue types to show
-@AllArgsConstructor
 enum IssueType {
-  DURATION("DURATION"), IO("IO"), EXCEPTIONS("EXCEPTIONS");
-
-  @Getter
-  private final String name;
+  DURATION, IO, EXCEPTIONS
 }

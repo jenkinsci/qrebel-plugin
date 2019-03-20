@@ -133,13 +133,13 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   private String toIssueTypes() {
     List<String> issueTypes = new ArrayList<>();
     if (DURATION) {
-      issueTypes.add(IssueType.DURATION.getName());
+      issueTypes.add(IssueType.DURATION.name());
     }
     if (IO) {
-      issueTypes.add(IssueType.IO.getName());
+      issueTypes.add(IssueType.IO.name());
     }
     if (EXCEPTIONS) {
-      issueTypes.add(IssueType.EXCEPTIONS.getName());
+      issueTypes.add(IssueType.EXCEPTIONS.name());
     }
     return StringUtils.join(issueTypes, ",");
   }
@@ -157,7 +157,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .exceptionsAllowed(exceptionsAllowed)
         .excessiveIoAllowed(excessiveIoAllowed)
         .slaGlobalLimit(slaGlobalLimit)
-        .comparisonStrategy(ComparisonStrategy.get(comparisonStrategy))
+        .comparisonStrategy(ComparisonStrategy.valueOf(comparisonStrategy))
         .issueTypes(toIssueTypes())
         .build();
   }

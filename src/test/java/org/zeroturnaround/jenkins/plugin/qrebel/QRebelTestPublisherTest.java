@@ -23,6 +23,7 @@ import static org.zeroturnaround.jenkins.plugin.qrebel.ComparisonStrategy.DEFAUL
 import static org.zeroturnaround.jenkins.plugin.qrebel.ComparisonStrategy.THRESHOLD;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
@@ -223,7 +224,7 @@ public class QRebelTestPublisherTest {
   private void verifyIssueTypesSet(IssueType... issueTypes) {
     RequestPatternBuilder patternBuilder = getRequestedFor(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"));
     for (IssueType element : issueTypes) {
-      patternBuilder = patternBuilder.withQueryParam("issues", containing(element.getName()));
+      patternBuilder = patternBuilder.withQueryParam("issues", containing(element.name()));
     }
     if (issueTypes.length == 0) {
       patternBuilder = patternBuilder.withQueryParam("issues", equalTo(""));
@@ -245,9 +246,9 @@ public class QRebelTestPublisherTest {
     env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_EXCESSIVE_IO_ISSUES));
     env.put("exceptionsAllowed", String.valueOf(exceptionsAllowed));
     env.put("slaGlobalLimit", String.valueOf(threshold));
-    env.put("comparisonStrategy", strategy.getName());
+    env.put("comparisonStrategy", strategy.name());
     for (IssueType element : issueTypes) {
-      env.put(element.getName(), "true");
+      env.put(element.name(), "true");
     }
     j.jenkins.getGlobalNodeProperties().add(prop);
   }
@@ -269,10 +270,7 @@ public class QRebelTestPublisherTest {
   }
 
   private FreeStyleProject makeWithIssueTypes(IssueType... typesArray) throws IOException {
-    EnumSet<IssueType> issueTypes = EnumSet.noneOf(IssueType.class);
-    for (IssueType element : typesArray) {
-      issueTypes.add(element);
-    }
+    EnumSet<IssueType> issueTypes = typesArray.length > 0 ? EnumSet.copyOf(Arrays.asList(typesArray)) : EnumSet.noneOf(IssueType.class);
     return makeProject(BASELINE_BUILD, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, issueTypes);
   }
 
@@ -280,7 +278,7 @@ public class QRebelTestPublisherTest {
     setEnvVariables(baselineBuild, slowRequestsAllowed, exceptionsAllowed, threshold, strategy, issueTypes);
     FreeStyleProject project = j.createFreeStyleProject();
     Publisher qrebel = new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, baselineBuild, BASELINE_VERSION,
-        AUTH_KEY, wireMockRule.baseUrl(), strategy.getName(), slowRequestsAllowed, IGNORE_ALL_EXCESSIVE_IO_ISSUES, exceptionsAllowed, threshold,
+        AUTH_KEY, wireMockRule.baseUrl(), strategy.name(), slowRequestsAllowed, IGNORE_ALL_EXCESSIVE_IO_ISSUES, exceptionsAllowed, threshold,
         issueTypes.contains(IssueType.DURATION), issueTypes.contains(IssueType.IO), issueTypes.contains(IssueType.EXCEPTIONS));
     project.getPublishersList().add(qrebel);
     return project;
