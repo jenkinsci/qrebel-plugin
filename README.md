@@ -5,8 +5,8 @@ This Jenkins Plugin collects application performance data from [QRebel](https://
 
 ## How to use it?
 ### Attach QRebel agent
-Attach the agent to existing tests to start monitoring your application performance. See [QRebel Quick Start](https://qrebel.com//quick-start/) guide. Configure your app name eg. `petclinic`. Label your app changes with builds eg. `1.4.0rc1`, `1.4.0rc2` etc.
-### Add A QRebel post-build action
+Attach the agent to existing tests to start monitoring your application performance. See [QRebel Quick Start](https://qrebel.com/quick-start/) guide. Configure your app name eg. `petclinic`. Label your app changes with builds eg. `1.4.0rc1`, `1.4.0rc2` etc.
+### Add a QRebel post-build action
 Add a new post-build action `Monitor performance with QRebel`. This action will compare the performance of a baseline build and a target build.   
 * Type the configured app name to `Application name`, eg. `petclinic`
 * Specify `Target build` eg. `1.4.0rc2`. Environment variables are supported eg. `1.4.0rc${BUILD_NUMBER}`
