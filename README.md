@@ -11,7 +11,7 @@ Add a new post-build action `Monitor performance with QRebel`. This action will 
 * Type the configured app name to `Application name`, eg. `petclinic`
 * Specify `Target build` eg. `1.4.0rc2`. Environment variables are supported eg. `1.4.0rc${BUILD_NUMBER}`
 * Specify `Baseline build` - the initial build to compare your app performance with. Usually static. Eg. `1.4.rc1` If not specified, the comparison is performed against the static threshold.
-* Provide `QRebel ApiKey` - REST API authentication token, see [REST API](https://manuals.zeroturnaround.com/qrebel/api/index.html) for detail
+* Provide `QRebel API Token ` - REST API authentication token, see [REST API](https://manuals.zeroturnaround.com/qrebel/api/index.html) for detail
 
 If a build fails than the cause will be specified in its description, eg.
 ```

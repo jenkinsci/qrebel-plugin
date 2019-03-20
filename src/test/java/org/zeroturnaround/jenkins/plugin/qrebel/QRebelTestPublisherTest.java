@@ -240,7 +240,7 @@ public class QRebelTestPublisherTest {
     env.put("targetVersion", TARGET_VERSION);
     env.put("baselineBuild", baselineBuild);
     env.put("baselineVersion", BASELINE_VERSION);
-    env.put("apiKey", AUTH_KEY);
+    env.put("apiToken", AUTH_KEY);
     env.put("serverUrl", wireMockRule.baseUrl());
     env.put("slowRequestsAllowed", String.valueOf(slowRequestsAllowed));
     env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_EXCESSIVE_IO_ISSUES));

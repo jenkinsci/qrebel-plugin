@@ -7,6 +7,7 @@
  */
 package org.zeroturnaround.jenkins.plugin.qrebel;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import lombok.Builder;
 import lombok.experimental.Wither;
 
@@ -15,13 +16,14 @@ import lombok.experimental.Wither;
  */
 @Builder
 @Wither
+@SuppressFBWarnings(justification = "Generated code")
 class Fields {
   final String appName;
   final String targetBuild;
   final String targetVersion;
   final String baselineBuild;
   final String baselineVersion;
-  final String apiKey;
+  final String apiToken;
   final String serverUrl;
   final ComparisonStrategy comparisonStrategy;
   final long slowRequestsAllowed;

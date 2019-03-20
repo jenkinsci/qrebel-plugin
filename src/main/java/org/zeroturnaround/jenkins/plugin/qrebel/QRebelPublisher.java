@@ -53,7 +53,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final String targetVersion;
   final String baselineBuild;
   final String baselineVersion;
-  final String apiKey;
+  final String apiToken;
   final String serverUrl;
   final String comparisonStrategy;
   final long slowRequestsAllowed;
@@ -127,7 +127,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     else if (ComparisonStrategy.DEFAULT_BASELINE.equals(fields.comparisonStrategy)) {
       requestBuilder = requestBuilder.defaultBaseline("");
     }
-    return restApi.getIssues(fields.apiKey, fields.appName, requestBuilder.build());
+    return restApi.getIssues(fields.apiToken, fields.appName, requestBuilder.build());
   }
 
   private String toIssueTypes() {
@@ -146,7 +146,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   private Fields resolveFields(Run<?, ?> run) {
     return Fields.builder()
-        .apiKey(resolveEnvVarFromRun(apiKey, run))
+        .apiToken(resolveEnvVarFromRun(apiToken, run))
         .appName(resolveEnvVarFromRun(appName, run))
         .baselineBuild(resolveEnvVarFromRun(baselineBuild, run))
         .baselineVersion(resolveEnvVarFromRun(baselineVersion, run))

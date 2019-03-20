@@ -6,8 +6,8 @@
     <f:entry title="${%ApplicationName}" field="appName">
       <f:textbox/>
     </f:entry>
-    <f:entry title="${%Apikey}" field="apiKey">
-      <f:password field="apiKey"/>
+    <f:entry title="${%ApiToken}" field="apiToken">
+      <f:password field="apiToken"/>
     </f:entry>
     <f:entry title="${%ServerUrl}" field="serverUrl">
       <f:textbox default="https://hub.qrebel.com"/>
