@@ -76,7 +76,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     @Override
     public @Nonnull
     String getDisplayName() {
-      return Messages.QRebelBuilder_DescriptorImpl_DisplayName();
+      return "Monitor performance regression with QRebel";
     }
   }
 
