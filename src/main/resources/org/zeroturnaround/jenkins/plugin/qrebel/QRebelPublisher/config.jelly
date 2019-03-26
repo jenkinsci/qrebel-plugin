@@ -4,20 +4,23 @@
 
   <f:section title="${%ApplicationConnection}">
     <f:entry title="${%ApplicationName}" field="appName">
-      <f:textbox/>
+      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
     </f:entry>
     <f:entry title="${%ApiToken}" field="apiToken">
-      <f:password field="apiToken"/>
+      <f:password field="apiToken" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
     </f:entry>
     <f:entry title="${%ServerUrl}" field="serverUrl">
-      <f:textbox default="https://hub.qrebel.com"/>
+      <f:textbox default="https://hub.qrebel.com" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
     </f:entry>
+    <f:validateButton
+        title="${%TestConnection}" progress="${%Testing}"
+        method="testConnection" with="appName,apiToken,serverUrl" />
   </f:section>
 
 
   <f:section title="${%TargetBuild}">
     <f:entry title="${%Build}" field="targetBuild" mandatory="true">
-      <f:textbox/>
+      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" />
     </f:entry>
     <f:entry title="${%Version}" field="targetVersion">
       <f:textbox/>
@@ -29,7 +32,7 @@
     <f:radioBlock name="comparisonStrategy" value="BASELINE" title="${%StrategyBaseline}" checked="${instance == null || instance.isStrategy('BASELINE')}" inline="true">
       <f:nested>
         <f:entry title="${%Build}" field="baselineBuild" mandatory="true">
-          <f:textbox/>
+          <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" />
         </f:entry>
         <f:entry title="${%Version}" field="baselineVersion">
           <f:textbox/>
