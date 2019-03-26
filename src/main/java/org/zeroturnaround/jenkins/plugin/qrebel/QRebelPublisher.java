@@ -17,11 +17,13 @@ import org.jenkinsci.Symbol;
 import org.jenkinsci.lib.envinject.EnvInjectException;
 import org.jenkinsci.plugins.envinjectapi.util.EnvVarsResolver;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesResponse;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesRequest;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApi;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApiClient;
 
+import feign.FeignException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -32,6 +34,7 @@ import hudson.model.TaskListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
+import hudson.util.FormValidation;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -68,6 +71,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   @Symbol(PLUGIN_SHORT_NAME)
   @Extension
   public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
+
     @Override
     public boolean isApplicable(Class<? extends AbstractProject> aClass) {
       return true;
@@ -77,6 +81,33 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     public @Nonnull
     String getDisplayName() {
       return "Monitor performance regression with QRebel";
+    }
+
+    public FormValidation doTestConnection(@QueryParameter("appName") final String appName,
+                                           @QueryParameter("apiToken") final String apiToken,
+                                           @QueryParameter("serverUrl") final String serverUrl) {
+      if (StringUtils.isBlank(appName) || StringUtils.isBlank(apiToken) || StringUtils.isBlank(serverUrl)) {
+        return FormValidation.error("Connection parameters cannot be blank");
+      }
+      try {
+        QRebelRestApiClient.createBasic(serverUrl).testConnection(apiToken, appName);
+        return FormValidation.ok("Success");
+      }
+      catch (FeignException e) {
+        switch (e.status()) {
+          case 401: return FormValidation.error("Authorization failed");
+          case 404: return FormValidation.error("No application found");
+        }
+        Throwable cause = e.getCause();
+        if (cause != null && StringUtils.isNotBlank(cause.toString())) {
+          return FormValidation.error(cause.toString());
+        }
+        return FormValidation.error(e.getMessage());
+      }
+    }
+
+    public FormValidation doCheckBlank(@QueryParameter String value) {
+      return StringUtils.isBlank(value) ? FormValidation.error("Mandatory field") : FormValidation.ok();
     }
   }
 
@@ -90,6 +121,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     logger.println("Baseline Version: " + fields.baselineVersion);
     logger.println("Target Build: " + fields.targetBuild);
     logger.println("Target Version: " + fields.targetVersion);
+    validateMinimalMandatoryParameters(fields);
 
     IssuesResponse qRData = getIssues(fields, logger);
     IssuesStats stats = new IssuesStats(qRData);
@@ -105,6 +137,19 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
       String initialDescription = run.getDescription();
       run.setDescription(StringUtils.isEmpty(initialDescription) ? failureDescription : initialDescription + "<br/>" + failureDescription);
       logger.println(failureDescription);
+    }
+  }
+
+  //  fails a build and add error message to the log if the minimal param set in undefined
+  private static void validateMinimalMandatoryParameters(Fields fields) {
+    if (StringUtils.isEmpty(fields.appName) || StringUtils.isEmpty(fields.serverUrl) || StringUtils.isEmpty(fields.apiToken)) {
+      throw new IllegalArgumentException("Connection parameters cannot be blank");
+    }
+    if (StringUtils.isEmpty(fields.targetBuild)) {
+      throw new IllegalArgumentException("Target build name cannot be blank");
+    }
+    if (StringUtils.isEmpty(fields.baselineBuild) && fields.comparisonStrategy == ComparisonStrategy.BASELINE) {
+      throw new IllegalArgumentException("Baseline build name cannot be blank");
     }
   }
 
@@ -125,7 +170,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
           .baselineVersion(fields.baselineVersion);
     }
     else if (ComparisonStrategy.DEFAULT_BASELINE.equals(fields.comparisonStrategy)) {
-      requestBuilder = requestBuilder.defaultBaseline("");
+      requestBuilder = requestBuilder.defaultBaseline(true);
     }
     return restApi.getIssues(fields.apiToken, fields.appName, requestBuilder.build());
   }
@@ -165,7 +210,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   // resolve fields
   private static String resolveEnvVarFromRun(String value, Run<?, ?> run) {
     try {
-      return EnvVarsResolver.resolveEnvVars(run, value);
+      return StringUtils.trimToNull(EnvVarsResolver.resolveEnvVars(run, value));
     }
     catch (EnvInjectException e) {
       throw new IllegalStateException("Unable to get Env Variable " + value, e);

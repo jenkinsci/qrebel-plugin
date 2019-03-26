@@ -36,16 +36,25 @@ public class QRebelRestApiClient {
         .target(QRebelRestApi.class, serverUrl);
   }
 
-  // extract response body if HTTP request fails
+  // create a new client instance without logging and JSON parsing
+  public static QRebelRestApi createBasic(String serverUrl) {
+    return Feign.builder().target(QRebelRestApi.class, serverUrl);
+  }
+
+  // translate known issues or extract response body otherwise
   private static class ErrorBodyDecoder implements ErrorDecoder {
     @Override
     public Exception decode(String methodKey, Response response) {
-      try {
-        return new IllegalStateException(IOUtils.toString(response.body().asInputStream()));
-      }
-      catch (IOException e) {
-        return new IllegalStateException(response.toString(), e);
-      }
+      return new IllegalStateException(responseToString(response));
+    }
+  }
+
+  private static String responseToString(Response response) {
+    try {
+      return IOUtils.toString(response.body().asInputStream());
+    }
+    catch (IOException e) {
+      return response.toString();
     }
   }
 }

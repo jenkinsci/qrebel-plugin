@@ -23,7 +23,7 @@ public class IssuesRequest {
   final Long exceptionsAllowed;
   @NonNull
   final String jenkinsPluginVersion;
-  final String defaultBaseline;
+  final Boolean defaultBaseline;
   final String baselineBuild;
   final String baselineVersion;
   final String issues;
