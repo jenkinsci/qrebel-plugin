@@ -22,7 +22,7 @@ class Fields {
   final String baselineBuild;
   final String baselineVersion;
   final String apiToken;
-  final String serverUrl;
+  final String apiUrl;
   final ComparisonStrategy comparisonStrategy;
   final long slowRequestsAllowed;
   final long excessiveIoAllowed;

@@ -39,12 +39,14 @@ import jenkins.tasks.SimpleBuildStep;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Wither;
 
 /**
  * A Jenkins build will be marked as failed if there are some issues detected by QRebel
  * The issues are obtained via HTTP requests to the QRebel server. Some of them can be ignored depending on the plugin configuration.
  */
 @Data
+@Wither
 @EqualsAndHashCode(callSuper = true)
 @RequiredArgsConstructor(onConstructor = @__({@DataBoundConstructor}))
 public class QRebelPublisher extends Recorder implements SimpleBuildStep {
@@ -57,7 +59,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   final String baselineBuild;
   final String baselineVersion;
   final String apiToken;
-  final String serverUrl;
+  final String apiUrl;
   final String comparisonStrategy;
   final long slowRequestsAllowed;
   final long excessiveIoAllowed;
@@ -72,6 +74,8 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   @Extension
   public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
 
+    public final boolean showHidden = Boolean.getBoolean("qrebel.jenkins.showHidden");
+
     @Override
     public boolean isApplicable(Class<? extends AbstractProject> aClass) {
       return true;
@@ -85,12 +89,12 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
     public FormValidation doTestConnection(@QueryParameter("appName") final String appName,
                                            @QueryParameter("apiToken") final String apiToken,
-                                           @QueryParameter("serverUrl") final String serverUrl) {
-      if (StringUtils.isBlank(appName) || StringUtils.isBlank(apiToken) || StringUtils.isBlank(serverUrl)) {
+                                           @QueryParameter("apiUrl") final String apiUrl) {
+      if (StringUtils.isBlank(appName) || StringUtils.isBlank(apiToken) || StringUtils.isBlank(apiUrl)) {
         return FormValidation.error("Connection parameters cannot be blank");
       }
       try {
-        QRebelRestApiClient.createBasic(serverUrl).testConnection(apiToken, appName);
+        QRebelRestApiClient.createBasic(apiUrl).testConnection(apiToken, appName);
         return FormValidation.ok("Success");
       }
       catch (FeignException e) {
@@ -142,7 +146,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   //  fails a build and add error message to the log if the minimal param set in undefined
   private static void validateMinimalMandatoryParameters(Fields fields) {
-    if (StringUtils.isEmpty(fields.appName) || StringUtils.isEmpty(fields.serverUrl) || StringUtils.isEmpty(fields.apiToken)) {
+    if (StringUtils.isEmpty(fields.appName) || StringUtils.isEmpty(fields.apiUrl) || StringUtils.isEmpty(fields.apiToken)) {
       throw new IllegalArgumentException("Connection parameters cannot be blank");
     }
     if (StringUtils.isEmpty(fields.targetBuild)) {
@@ -155,7 +159,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   // Get issues via REST
   private static IssuesResponse getIssues(Fields fields, PrintStream logger) {
-    QRebelRestApi restApi = QRebelRestApiClient.create(fields.serverUrl, logger);
+    QRebelRestApi restApi = QRebelRestApiClient.create(fields.apiUrl, logger);
     IssuesRequest.IssuesRequestBuilder requestBuilder = IssuesRequest.builder()
         .targetBuild(fields.targetBuild)
         .targetVersion(fields.targetVersion)
@@ -197,7 +201,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .baselineVersion(resolveEnvVarFromRun(baselineVersion, run))
         .targetBuild(resolveEnvVarFromRun(targetBuild, run))
         .targetVersion(resolveEnvVarFromRun(targetVersion, run))
-        .serverUrl(resolveEnvVarFromRun(serverUrl, run))
+        .apiUrl(resolveEnvVarFromRun(apiUrl, run))
         .slowRequestsAllowed(slowRequestsAllowed)
         .exceptionsAllowed(exceptionsAllowed)
         .excessiveIoAllowed(excessiveIoAllowed)
@@ -219,15 +223,19 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
 
   // describe failure reason
   private static String getFailureDescription(IssuesResponse qRData, Fields fields, long slowestDuration) {
-    return String.format("Failing build due to performance regressions found in %s compared to build %s version %s. <br/>%n" +
+    return String.format("Failing build due to performance regressions found in %s compared to %s. <br/>%n" +
             "Slow Requests: %d <br/>%n" +
             "Excessive IO: %d <br/>%n" +
             "Exceptions: %d <br/>%n" +
             "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>%n" +
             "For full report check your <a href= %s >dashboard</a>.<br/>%n",
-        qRData.appName, fields.baselineBuild, fields.baselineVersion, qRData.issuesCount.DURATION,
+        qRData.appName, buildFullName(fields.baselineBuild, fields.baselineVersion), qRData.issuesCount.DURATION,
         qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
         fields.slaGlobalLimit, slowestDuration, qRData.appViewUrl);
+  }
+
+  public static String buildFullName(String build, String version) {
+    return String.format(StringUtils.isBlank(version) ? "build '%s'" : "build '%s' version '%s'", build, version);
   }
 
   // Helper method for the jelly view to determine comparisonStrategy

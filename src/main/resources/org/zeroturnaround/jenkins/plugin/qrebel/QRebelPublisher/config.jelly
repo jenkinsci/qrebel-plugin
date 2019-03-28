@@ -9,12 +9,21 @@
     <f:entry title="${%ApiToken}" field="apiToken">
       <f:password field="apiToken" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
     </f:entry>
-    <f:entry title="${%ServerUrl}" field="serverUrl">
-      <f:textbox default="https://hub.qrebel.com" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
-    </f:entry>
+    <j:choose>
+      <j:when test="${descriptor.showHidden}">
+        <f:entry title="${%ApiUrl}" field="apiUrl">
+          <f:textbox default="https://hub.qrebel.com/api" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
+        </f:entry>
+      </j:when>
+      <j:otherwise>
+        <f:invisibleEntry field="apiUrl">
+          <f:textbox style="display:none" default="https://hub.qrebel.com/api" field="apiUrl"/>
+        </f:invisibleEntry>
+      </j:otherwise>
+    </j:choose>
     <f:validateButton
         title="${%TestConnection}" progress="${%Testing}"
-        method="testConnection" with="appName,apiToken,serverUrl" />
+        method="testConnection" with="appName,apiToken,apiUrl" />
   </f:section>
 
 

@@ -18,9 +18,9 @@ import feign.RequestLine;
 @Headers({"Content-Type: application/json", "authorization: {apiToken}"})
 public interface QRebelRestApi {
 
-  @RequestLine("GET /api/applications/{appName}/baselines/default")
+  @RequestLine("GET /applications/{appName}/baselines/default")
   void testConnection(@Param("apiToken") String apiToken, @Param("appName") String appName);
 
-  @RequestLine("GET /api/applications/{appName}/issues/")
+  @RequestLine("GET /applications/{appName}/issues/")
   IssuesResponse getIssues(@Param("apiToken") String apiToken, @Param("appName") String appName, @QueryMap IssuesRequest request);
 }

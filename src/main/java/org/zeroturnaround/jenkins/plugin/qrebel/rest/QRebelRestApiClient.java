@@ -22,7 +22,7 @@ import feign.gson.GsonDecoder;
  */
 public class QRebelRestApiClient {
   // create a new client instance
-  public static QRebelRestApi create(String serverUrl, PrintStream logger) {
+  public static QRebelRestApi create(String apiUrl, PrintStream logger) {
     return Feign.builder()
         .errorDecoder(new ErrorBodyDecoder())
         .logLevel(Logger.Level.BASIC)
@@ -33,12 +33,12 @@ public class QRebelRestApiClient {
           }
         })
         .decoder(new GsonDecoder())
-        .target(QRebelRestApi.class, serverUrl);
+        .target(QRebelRestApi.class, apiUrl);
   }
 
   // create a new client instance without logging and JSON parsing
-  public static QRebelRestApi createBasic(String serverUrl) {
-    return Feign.builder().target(QRebelRestApi.class, serverUrl);
+  public static QRebelRestApi createBasic(String apiUrl) {
+    return Feign.builder().target(QRebelRestApi.class, apiUrl);
   }
 
   // translate known issues or extract response body otherwise

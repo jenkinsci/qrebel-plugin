@@ -35,11 +35,9 @@ import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
 
-import hudson.EnvVars;
 import hudson.model.Build;
 import hudson.model.FreeStyleProject;
 import hudson.model.Result;
-import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.tasks.Publisher;
 
 public class QRebelTestPublisherTest {
@@ -64,164 +62,178 @@ public class QRebelTestPublisherTest {
   private static final long GLOBAL_LIMIT_BELOW_FASTEST = FASTEST_REQUEST - 1L;
   private static final long GLOBAL_LIMIT_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
   @Rule
-  public final JenkinsRule j = new JenkinsRule();
+  public JenkinsRule j = new JenkinsRule();
   @Rule
-  public final WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
+  public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.wireMockConfig().dynamicPort());
 
   @Test
   public void authFailedOnIssues() throws Exception {
     stubIssuesApi(forbidden());
-    buildAndAssertFailure(makeDefault());
+    buildAndAssertFailure(withDefault());
     verifyIssuesCalled();
   }
 
   @Test
   public void tooManySlowRequests() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertFailure(makeWithAllowedIssues(TOO_MANY_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS));
+    buildAndAssertFailure(withDefault().withSlowRequestsAllowed(TOO_MANY_SLOW_REQUESTS).withExceptionsAllowed(IGNORE_ALL_EXCEPTIONS));
   }
 
   @Test
   public void tooManyExceptions() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertFailure(makeWithAllowedIssues(IGNORE_ALL_SLOW_REQUESTS, TOO_MANY_EXCEPTIONS));
+    buildAndAssertFailure(withDefault().withSlowRequestsAllowed(IGNORE_ALL_SLOW_REQUESTS).withExceptionsAllowed(TOO_MANY_EXCEPTIONS));
   }
 
   @Test
   public void limitBelowFastest() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertFailure(makeWithThreshold(GLOBAL_LIMIT_BELOW_FASTEST));
+    buildAndAssertFailure(withDefault().withSlaGlobalLimit(GLOBAL_LIMIT_BELOW_FASTEST));
   }
 
   @Test
   public void limitTouchesFastest() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertFailure(makeWithThreshold(FASTEST_REQUEST));
+    buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST));
   }
 
   @Test
   public void limitTouchesSlowest() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertFailure(makeWithThreshold(SLOWEST_REQUEST));
+    buildAndAssertFailure(withDefault().withSlaGlobalLimit(SLOWEST_REQUEST));
   }
 
   @Test
   public void limitAboveSlowest() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    j.buildAndAssertSuccess(makeWithThreshold(GLOBAL_LIMIT_ABOVE_SLOWEST));
+    buildAndAssertSuccess(withDefault().withSlaGlobalLimit(GLOBAL_LIMIT_ABOVE_SLOWEST));
     verifyIssuesCalled();
   }
 
   @Test
   public void baselineStrategySet() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithStrategy(BASELINE));
+    buildAndAssertSuccess(withDefault().withComparisonStrategy(BASELINE.name()));
     verifyStrategySet(BASELINE);
   }
 
   @Test
   public void globalThresholdStrategySet() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithStrategy(THRESHOLD));
+    buildAndAssertSuccess(withDefault().withComparisonStrategy(THRESHOLD.name()));
     verifyStrategySet(THRESHOLD);
   }
 
   @Test
   public void defaultBaselineStrategySet() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithStrategy(DEFAULT_BASELINE));
+    buildAndAssertSuccess(withDefault().withComparisonStrategy(DEFAULT_BASELINE.name()));
     verifyStrategySet(DEFAULT_BASELINE);
   }
 
   @Test
   public void userLimitsSet() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeDefault());
+    buildAndAssertSuccess(withDefault());
     verifyLimitsAndProtocolSet();
   }
 
   @Test
   public void noIssueTypes() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithIssueTypes());
+    buildAndAssertSuccess(withDefault().withDURATION(false).withIO(false).withEXCEPTIONS(false));
     verifyIssueTypesSet();
   }
 
   @Test
   public void allIssueTypes() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithIssueTypes(IssueType.EXCEPTIONS, IssueType.DURATION, IssueType.IO));
+    buildAndAssertSuccess(withDefault().withDURATION(true).withIO(true).withEXCEPTIONS(true));
     verifyIssueTypesSet(IssueType.EXCEPTIONS, IssueType.DURATION, IssueType.IO);
   }
 
   @Test
   public void onlyDurationIssueType() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithIssueTypes(IssueType.DURATION));
+    buildAndAssertSuccess(withDefault().withDURATION(true).withIO(false).withEXCEPTIONS(false));
     verifyIssueTypesSet(IssueType.DURATION);
   }
 
   @Test
   public void onlyIoIssueType() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithIssueTypes(IssueType.IO));
+    buildAndAssertSuccess(withDefault().withDURATION(false).withIO(true).withEXCEPTIONS(false));
     verifyIssueTypesSet(IssueType.IO);
   }
 
   @Test
   public void onlyExceptionIssueType() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithIssueTypes(IssueType.EXCEPTIONS));
+    buildAndAssertSuccess(withDefault().withDURATION(false).withIO(false).withEXCEPTIONS(true));
     verifyIssueTypesSet(IssueType.EXCEPTIONS);
   }
 
   @Test
   public void emptyVersions() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    buildAndAssertSuccess(makeWithEmptyVersions());
+    buildAndAssertSuccess(withDefault().withBaselineVersion(EMPTY_VERSION).withTargetVersion(EMPTY_VERSION));
     verifyEmptyVersions();
   }
 
   @Test
   public void jsonErrorShownInLogs() throws Exception {
     stubIssuesApi(400, "{ error: 'You shall not pass!'}");
-    Build build = buildAndAssertFailure(makeWithEmptyVersions());
+    Build build = buildAndAssertFailure(withDefault());
     j.assertLogContains("You shall not pass!", build);
   }
 
   @Test
   public void nonJsonErrorShownInLogs() throws Exception {
     stubIssuesApi(400, "A message");
-    Build build = buildAndAssertFailure(makeWithEmptyVersions());
+    Build build = buildAndAssertFailure(withDefault());
     j.assertLogContains("A message", build);
   }
 
   @Test
   public void connectionParamsCannotBeBlank() throws Exception {
-    Build build = buildAndAssertFailure(makeWithEmptyApiToken());
+    Build build = buildAndAssertFailure(withDefault().withApiToken(EMPTY_TOKEN));
     j.assertLogContains("Connection parameters cannot be blank", build);
   }
 
   @Test
   public void targetBuildCannotBeBlank() throws Exception {
-    Build build = buildAndAssertFailure(makeWithEmptyTargetBuild());
+    Build build = buildAndAssertFailure(withDefault().withTargetBuild(EMPTY_TARGET_BUILD));
     j.assertLogContains("Target build name cannot be blank", build);
   }
 
   @Test
   public void baselineBuildCannotBeBlankInBaseline() throws Exception {
-    Build build = buildAndAssertFailure(makeWithEmptyMandatoryBaselineBuild());
+    Build build = buildAndAssertFailure(withDefault().withComparisonStrategy(BASELINE.name()).withBaselineBuild(EMPTY_BASELINE_BUILD));
     j.assertLogContains("Baseline build name cannot be blank", build);
   }
 
   @Test
   public void baselineBuildCanBeBlank() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    Build build = buildAndAssertSuccess(makeWithEmptyOptionalBaselineBuild());
+    Build build = buildAndAssertSuccess(withDefault().withComparisonStrategy(DEFAULT_BASELINE.name()).withBaselineBuild(EMPTY_BASELINE_BUILD));
     j.assertLogNotContains("Baseline build name cannot be blank", build);
   }
 
-  private void stubIssuesApi(ResponseDefinitionBuilder response) throws IOException {
+  @Test
+  public void buildAndVersionLogged() throws Exception {
+    stubIssuesApi(ok().withBody(getIssuesJson()));
+    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST));
+    j.assertLogContains("build '2.05RC1' version '1'", build);
+  }
+
+  @Test
+  public void blankVersionNotLogged() throws Exception {
+    stubIssuesApi(ok().withBody(getIssuesJson()));
+    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST).withBaselineVersion(EMPTY_VERSION));
+    j.assertLogNotContains("version '", build);
+  }
+
+  private void stubIssuesApi(ResponseDefinitionBuilder response) {
     stubFor(get(urlMatching("/api/applications/" + APP_NAME + "/issues/.*"))
         .withHeader("authorization", equalTo(API_TOKEN))
         .withQueryParam("targetBuild", equalTo(TARGET_BUILD))
@@ -302,83 +314,21 @@ public class QRebelTestPublisherTest {
     verify(patternBuilder);
   }
 
-  private void setEnvVariables(String targetBuild, String baselineBuild, String token, String targetVersion, String baselineVersion, long slowRequestsAllowed, long exceptionsAllowed, long threshold, ComparisonStrategy strategy, EnumSet<IssueType> issueTypes) {
-    EnvironmentVariablesNodeProperty prop = new EnvironmentVariablesNodeProperty();
-    EnvVars env = prop.getEnvVars();
-    env.put("appName", APP_NAME);
-    env.put("targetBuild", targetBuild);
-    env.put("targetVersion", targetVersion);
-    env.put("baselineBuild", baselineBuild);
-    env.put("baselineVersion", baselineVersion);
-    env.put("apiToken", token);
-    env.put("serverUrl", wireMockRule.baseUrl());
-    env.put("slowRequestsAllowed", String.valueOf(slowRequestsAllowed));
-    env.put("excessiveIOAllowed", String.valueOf(IGNORE_ALL_EXCESSIVE_IO_ISSUES));
-    env.put("exceptionsAllowed", String.valueOf(exceptionsAllowed));
-    env.put("slaGlobalLimit", String.valueOf(threshold));
-    env.put("comparisonStrategy", strategy.name());
-    for (IssueType element : issueTypes) {
-      env.put(element.name(), "true");
-    }
-    j.jenkins.getGlobalNodeProperties().add(prop);
+  private QRebelPublisher withDefault() {
+    return new QRebelPublisher(APP_NAME, TARGET_BUILD, TARGET_VERSION, BASELINE_BUILD, BASELINE_VERSION,
+        API_TOKEN, wireMockRule.baseUrl() + "/api", DEFAULT_BASELINE.name(), IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCESSIVE_IO_ISSUES, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST,
+        true, true, true);
   }
 
-  private FreeStyleProject makeDefault() throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithAllowedIssues(long slowRequestsAllowed, long exceptionsAllowed) throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, slowRequestsAllowed, exceptionsAllowed, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithThreshold(long threshold) throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, threshold, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithStrategy(ComparisonStrategy strategy) throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, strategy, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithIssueTypes(IssueType... typesArray) throws IOException {
-    EnumSet<IssueType> issueTypes = typesArray.length > 0 ? EnumSet.copyOf(Arrays.asList(typesArray)) : EnumSet.noneOf(IssueType.class);
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, issueTypes);
-  }
-
-  private FreeStyleProject makeWithEmptyVersions() throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, API_TOKEN, EMPTY_VERSION, EMPTY_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithEmptyApiToken() throws IOException {
-    return makeProject(TARGET_BUILD, BASELINE_BUILD, EMPTY_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithEmptyTargetBuild() throws IOException {
-    return makeProject(EMPTY_TARGET_BUILD, BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithEmptyMandatoryBaselineBuild() throws IOException {
-    return makeProject(TARGET_BUILD, EMPTY_BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeWithEmptyOptionalBaselineBuild() throws IOException {
-    return makeProject(TARGET_BUILD, EMPTY_BASELINE_BUILD, API_TOKEN, TARGET_VERSION, BASELINE_VERSION, IGNORE_ALL_SLOW_REQUESTS, IGNORE_ALL_EXCEPTIONS, GLOBAL_LIMIT_ABOVE_SLOWEST, DEFAULT_BASELINE, EnumSet.allOf(IssueType.class));
-  }
-
-  private FreeStyleProject makeProject(String targetBuild, String baselineBuild, String token, String targetVersion, String baselineVersion, long slowRequestsAllowed, long exceptionsAllowed, long threshold, ComparisonStrategy strategy, EnumSet<IssueType> issueTypes) throws IOException {
-    setEnvVariables(targetBuild, baselineBuild, token, targetVersion, baselineVersion, slowRequestsAllowed, exceptionsAllowed, threshold, strategy, issueTypes);
+  private Build buildAndAssertFailure(Publisher publisher) throws Exception {
     FreeStyleProject project = j.createFreeStyleProject();
-    Publisher qrebel = new QRebelPublisher(APP_NAME, targetBuild, targetVersion, baselineBuild, baselineVersion,
-        token, wireMockRule.baseUrl(), strategy.name(), slowRequestsAllowed, IGNORE_ALL_EXCESSIVE_IO_ISSUES, exceptionsAllowed, threshold,
-        issueTypes.contains(IssueType.DURATION), issueTypes.contains(IssueType.IO), issueTypes.contains(IssueType.EXCEPTIONS));
-    project.getPublishersList().add(qrebel);
-    return project;
-  }
-
-  private Build buildAndAssertFailure(FreeStyleProject project) throws Exception {
+    project.getPublishersList().add(publisher);
     return j.assertBuildStatus(Result.FAILURE, project.scheduleBuild2(0));
   }
 
-  private Build buildAndAssertSuccess(FreeStyleProject project) throws Exception {
+  private Build buildAndAssertSuccess(Publisher publisher) throws Exception {
+    FreeStyleProject project = j.createFreeStyleProject();
+    project.getPublishersList().add(publisher);
     return j.buildAndAssertSuccess(project);
   }
 }
