@@ -55,7 +55,7 @@ class FailureReport {
   }
 
   String asHtml() {
-    return StringUtils.join(lines, "<br/>%n");
+    return StringUtils.join(lines, "<br/>\n");
   }
 
   String asText() {
