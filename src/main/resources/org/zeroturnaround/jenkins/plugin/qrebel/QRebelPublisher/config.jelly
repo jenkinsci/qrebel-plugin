@@ -38,7 +38,8 @@
 
   <f:section title="${%ComparisonStrategy}">
     <!-- Selected by default -->
-    <f:radioBlock name="comparisonStrategy" value="BASELINE" title="${%StrategyBaseline}" checked="${instance == null || instance.isStrategy('BASELINE')}" inline="true">
+    <f:radioBlock name="comparisonStrategy" value="BASELINE" title="${%StrategyBaseline}" checked="${instance == null || instance.isStrategy('BASELINE')}" inline="true"
+                  help="/descriptorByName/QRebelPublisher/help/strategyBaseline">
       <f:nested>
         <f:entry title="${%Build}" field="baselineBuild" mandatory="true">
           <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" />
@@ -49,7 +50,8 @@
       </f:nested>
     </f:radioBlock>
     <f:radioBlock name="comparisonStrategy" value="DEFAULT_BASELINE" title="${%StrategyDefaultBaseline}" checked="${instance.isStrategy('DEFAULT_BASELINE')}" inline="true"/>
-    <f:radioBlock name="comparisonStrategy" value="THRESHOLD" title="${%StrategyThreshold}" checked="${instance.isStrategy('THRESHOLD')}" inline="true"/>
+    <f:radioBlock name="comparisonStrategy" value="THRESHOLD" title="${%StrategyThreshold}" checked="${instance.isStrategy('THRESHOLD')}" inline="true"
+                  help="/descriptorByName/QRebelPublisher/help/strategyStatic"/>
   </f:section>
 
   <f:section title="${%IssueTypes}">
