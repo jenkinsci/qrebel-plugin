@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
@@ -84,7 +85,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     @Override
     public @Nonnull
     String getDisplayName() {
-      return "Monitor performance regression with QRebel";
+      return "Monitor performance regressions with QRebel";
     }
 
     public FormValidation doTestConnection(@QueryParameter("appName") final String appName,
@@ -92,6 +93,9 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
                                            @QueryParameter("apiUrl") final String apiUrl) {
       if (StringUtils.isBlank(appName) || StringUtils.isBlank(apiToken) || StringUtils.isBlank(apiUrl)) {
         return FormValidation.error("Connection parameters cannot be blank");
+      }
+      if (StringUtils.contains(appName, '$') || StringUtils.contains(apiToken, '$') || StringUtils.contains(apiUrl, '$')) {
+        return FormValidation.warning("Cannot verify connection containing placeholders ${PLACEHOLDER}");
       }
       try {
         QRebelRestApiClient.createBasic(apiUrl).testConnection(apiToken, appName);
@@ -136,11 +140,11 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         || stats.isSlaGlobalLimitExceeded(fields.slaGlobalLimit);
 
     if (failBuild) {
-      run.setResult(Result.FAILURE);
-      String failureDescription = getFailureDescription(qRData, fields, stats.getSlowestDuration());
+      FailureReport report = FailureReport.generate(qRData, fields);
       String initialDescription = run.getDescription();
-      run.setDescription(StringUtils.isEmpty(initialDescription) ? failureDescription : initialDescription + "<br/>" + failureDescription);
-      logger.println(failureDescription);
+      run.setDescription(StringUtils.isEmpty(initialDescription) ? report.asHtml() : initialDescription + "<br/>" + report.asHtml());
+      logger.println(report.asText());
+      run.setResult(Result.FAILURE);
     }
   }
 
@@ -219,23 +223,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     catch (EnvInjectException e) {
       throw new IllegalStateException("Unable to get Env Variable " + value, e);
     }
-  }
-
-  // describe failure reason
-  private static String getFailureDescription(IssuesResponse qRData, Fields fields, long slowestDuration) {
-    return String.format("Failing build due to performance regressions found in %s compared to %s. <br/>%n" +
-            "Slow Requests: %d <br/>%n" +
-            "Excessive IO: %d <br/>%n" +
-            "Exceptions: %d <br/>%n" +
-            "SLA global limit (ms): %d ms | slowest endpoint time(ms): %d ms <br/>%n" +
-            "For full report check your <a href= %s >dashboard</a>.<br/>%n",
-        qRData.appName, buildFullName(fields.baselineBuild, fields.baselineVersion), qRData.issuesCount.DURATION,
-        qRData.issuesCount.IO, qRData.issuesCount.EXCEPTIONS,
-        fields.slaGlobalLimit, slowestDuration, qRData.appViewUrl);
-  }
-
-  public static String buildFullName(String build, String version) {
-    return String.format(StringUtils.isBlank(version) ? "build '%s'" : "build '%s' version '%s'", build, version);
   }
 
   // Helper method for the jelly view to determine comparisonStrategy

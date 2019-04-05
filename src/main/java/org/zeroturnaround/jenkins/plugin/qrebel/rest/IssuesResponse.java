@@ -10,11 +10,13 @@ package org.zeroturnaround.jenkins.plugin.qrebel.rest;
 import java.util.List;
 
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Wither;
 
 /**
  * Issues data parsed from JSON
  */
 @RequiredArgsConstructor
+@Wither
 public class IssuesResponse {
 
   public final String appName;

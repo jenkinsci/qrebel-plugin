@@ -24,16 +24,17 @@ import static org.zeroturnaround.jenkins.plugin.qrebel.ComparisonStrategy.DEFAUL
 import static org.zeroturnaround.jenkins.plugin.qrebel.ComparisonStrategy.THRESHOLD;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.EnumSet;
 import org.apache.commons.io.IOUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesResponse;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import hudson.model.Build;
 import hudson.model.FreeStyleProject;
@@ -222,15 +223,44 @@ public class QRebelTestPublisherTest {
   @Test
   public void buildAndVersionLogged() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST));
-    j.assertLogContains("build '2.05RC1' version '1'", build);
+    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST).withComparisonStrategy(THRESHOLD.name()));
+    j.assertLogContains(" build: 2.0.6RC3", build);
+    j.assertLogContains(" version: 1", build);
   }
 
   @Test
   public void blankVersionNotLogged() throws Exception {
+    stubIssuesApi(ok().withBody(setResponseVersions(getIssuesJson(), EMPTY_VERSION, EMPTY_VERSION)));
+    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST).withBaselineVersion(EMPTY_VERSION).withTargetVersion(EMPTY_VERSION));
+    j.assertLogNotContains(" version: ", build);
+  }
+
+  @Test
+  public void slaFailureLogged() throws Exception {
     stubIssuesApi(ok().withBody(getIssuesJson()));
-    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(FASTEST_REQUEST).withBaselineVersion(EMPTY_VERSION));
-    j.assertLogNotContains("version '", build);
+    Build build = buildAndAssertFailure(withDefault().withSlaGlobalLimit(GLOBAL_LIMIT_BELOW_FASTEST));
+    j.assertLogContains("Build failed by QRebel Plugin because Performance Gate thresholds were exceeded in", build);
+  }
+
+  @Test
+  public void baselineStrategyLogsBaselineBuild() throws Exception {
+    stubIssuesApi(ok().withBody(getIssuesJson()));
+    Build build = buildAndAssertFailure(withDefault().withSlowRequestsAllowed(TOO_MANY_SLOW_REQUESTS).withComparisonStrategy(BASELINE.name()));
+    j.assertLogContains("BASELINE", build);
+  }
+
+  @Test
+  public void thresholdStrategySkipsBaselineBuild() throws Exception {
+    stubIssuesApi(ok().withBody(getIssuesJson()));
+    Build build = buildAndAssertFailure(withDefault().withSlowRequestsAllowed(TOO_MANY_SLOW_REQUESTS).withComparisonStrategy(THRESHOLD.name()));
+    j.assertLogNotContains("BASELINE", build);
+  }
+
+  @Test
+  public void regressionLogged() throws Exception {
+    stubIssuesApi(ok().withBody(getIssuesJson()));
+    Build build = buildAndAssertFailure(withDefault().withSlowRequestsAllowed(TOO_MANY_SLOW_REQUESTS));
+    j.assertLogContains("Build failed because QRebel found regressions ", build);
   }
 
   private void stubIssuesApi(ResponseDefinitionBuilder response) {
@@ -240,7 +270,7 @@ public class QRebelTestPublisherTest {
         .willReturn(response));
   }
 
-  private void stubIssuesApi(int status, String responseBody) throws IOException {
+  private void stubIssuesApi(int status, String responseBody) {
     stubIssuesApi(aResponse().withStatus(status).withBody(responseBody));
   }
 
@@ -251,6 +281,15 @@ public class QRebelTestPublisherTest {
     catch (IOException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  private String setResponseVersions(String json, String baselineVersion, String targetVersion) {
+    Gson gson = new GsonBuilder().create();
+    IssuesResponse element = gson
+        .fromJson(json, IssuesResponse.class)
+        .withBaselineVersion(baselineVersion)
+        .withTargetVersion(targetVersion);
+    return gson.toJson(element);
   }
 
   private void verifyIssuesCalled() {
