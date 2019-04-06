@@ -4,15 +4,15 @@
 
   <f:section title="${%ApplicationConnection}">
     <f:entry title="${%ApplicationName}" field="appName">
-      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
+      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" checkMethod="post"/>
     </f:entry>
     <f:entry title="${%ApiToken}" field="apiToken">
-      <f:password field="apiToken" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
+      <f:password field="apiToken" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" checkMethod="post"/>
     </f:entry>
     <j:choose>
       <j:when test="${descriptor.showHidden}">
         <f:entry title="${%ApiUrl}" field="apiUrl">
-          <f:textbox default="https://hub.qrebel.com/api" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)"/>
+          <f:textbox default="https://hub.qrebel.com/api" checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" checkMethod="post"/>
         </f:entry>
       </j:when>
       <j:otherwise>
@@ -29,7 +29,7 @@
 
   <f:section title="${%TargetBuild}">
     <f:entry title="${%Build}" field="targetBuild" mandatory="true">
-      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" />
+      <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" checkMethod="post" />
     </f:entry>
     <f:entry title="${%Version}" field="targetVersion">
       <f:textbox/>
@@ -42,7 +42,7 @@
                   help="/descriptorByName/QRebelPublisher/help/strategyBaseline">
       <f:nested>
         <f:entry title="${%Build}" field="baselineBuild" mandatory="true">
-          <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" />
+          <f:textbox checkUrl="'descriptorByName/QRebelPublisher/checkBlank?value='+escape(this.value)" checkMethod="post" />
         </f:entry>
         <f:entry title="${%Version}" field="baselineVersion">
           <f:textbox/>

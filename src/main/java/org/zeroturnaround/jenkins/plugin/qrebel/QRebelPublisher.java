@@ -18,6 +18,7 @@ import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
 import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesResponse;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.IssuesRequest;
 import org.zeroturnaround.jenkins.plugin.qrebel.rest.QRebelRestApi;
@@ -88,6 +89,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
       return "Monitor performance regressions with QRebel";
     }
 
+    @POST
     public FormValidation doTestConnection(@QueryParameter("appName") final String appName,
                                            @QueryParameter("apiToken") final String apiToken,
                                            @QueryParameter("apiUrl") final String apiUrl) {
@@ -114,6 +116,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
       }
     }
 
+    @POST
     public FormValidation doCheckBlank(@QueryParameter String value) {
       return StringUtils.isBlank(value) ? FormValidation.error("Mandatory field") : FormValidation.ok();
     }
