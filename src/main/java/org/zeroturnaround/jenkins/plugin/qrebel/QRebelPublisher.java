@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
-import org.jenkinsci.plugins.tokenmacro.MacroEvaluationException;
-import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -28,6 +26,7 @@ import feign.FeignException;
 import hudson.Extension;
 import hudson.FilePath;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.Result;
@@ -37,6 +36,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Publisher;
 import hudson.tasks.Recorder;
 import hudson.util.FormValidation;
+import hudson.util.VariableResolver;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -126,7 +126,7 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
   public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher, @Nonnull TaskListener listener) throws IOException {
     Fields fields;
     if (run instanceof AbstractBuild) {
-      fields = resolveFields((AbstractBuild) run, listener);
+      fields = resolveFields((AbstractBuild) run);
     }
     else {
       throw new IllegalStateException("Deprecated Jenkins version. Use version 2.3.x+");
@@ -206,15 +206,16 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     return StringUtils.join(issueTypes, ",");
   }
 
-  private Fields resolveFields(AbstractBuild<?, ?> build, TaskListener listener) {
+  private Fields resolveFields(AbstractBuild<?, ?> build) {
+    VariableResolver<String> varResolver = build.getBuildVariableResolver();
     return Fields.builder()
-        .apiToken(resolveEnvVarFromRun(apiToken, build, listener))
-        .appName(resolveEnvVarFromRun(appName, build, listener))
-        .baselineBuild(resolveEnvVarFromRun(baselineBuild, build, listener))
-        .baselineVersion(resolveEnvVarFromRun(baselineVersion, build, listener))
-        .targetBuild(resolveEnvVarFromRun(targetBuild, build, listener))
-        .targetVersion(resolveEnvVarFromRun(targetVersion, build, listener))
-        .apiUrl(resolveEnvVarFromRun(apiUrl, build, listener))
+        .apiToken(StringUtils.trimToNull(Util.replaceMacro(apiToken, varResolver)))
+        .appName(StringUtils.trimToNull(Util.replaceMacro(appName, varResolver)))
+        .baselineBuild(StringUtils.trimToNull(Util.replaceMacro(baselineBuild, varResolver)))
+        .baselineVersion(StringUtils.trimToNull(Util.replaceMacro(baselineVersion, varResolver)))
+        .targetBuild(StringUtils.trimToNull(Util.replaceMacro(targetBuild, varResolver)))
+        .targetVersion(StringUtils.trimToNull(Util.replaceMacro(targetVersion, varResolver)))
+        .apiUrl(StringUtils.trimToNull(Util.replaceMacro(apiUrl, varResolver)))
         .slowRequestsAllowed(slowRequestsAllowed)
         .exceptionsAllowed(exceptionsAllowed)
         .excessiveIoAllowed(excessiveIoAllowed)
@@ -222,16 +223,6 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
         .comparisonStrategy(ComparisonStrategy.valueOf(comparisonStrategy))
         .issueTypes(toIssueTypes())
         .build();
-  }
-
-  // resolve fields
-  private static String resolveEnvVarFromRun(String value, AbstractBuild<?, ?> build, TaskListener listener) {
-    try {
-      return StringUtils.trimToNull(TokenMacro.expandAll(build, listener, value));
-    }
-    catch (MacroEvaluationException | IOException | InterruptedException e) {
-      throw new IllegalStateException("Unable to get Env Variable " + value, e);
-    }
   }
 
   // Helper method for the jelly view to determine comparisonStrategy
