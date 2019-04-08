@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.Symbol;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.verb.POST;
@@ -29,6 +30,7 @@ import hudson.Launcher;
 import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Item;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.model.TaskListener;
@@ -92,7 +94,14 @@ public class QRebelPublisher extends Recorder implements SimpleBuildStep {
     @POST
     public FormValidation doTestConnection(@QueryParameter("appName") final String appName,
                                            @QueryParameter("apiToken") final String apiToken,
-                                           @QueryParameter("apiUrl") final String apiUrl) {
+                                           @QueryParameter("apiUrl") final String apiUrl,
+                                           @AncestorInPath Item item) {
+
+      // Prevent apiToken leaking to a fake url
+      if (!item.hasPermission(Item.CONFIGURE)) {
+        return FormValidation.ok();
+      }
+
       if (StringUtils.isBlank(appName) || StringUtils.isBlank(apiToken) || StringUtils.isBlank(apiUrl)) {
         return FormValidation.error("Connection parameters cannot be blank");
       }
