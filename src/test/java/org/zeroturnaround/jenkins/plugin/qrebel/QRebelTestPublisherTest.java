@@ -62,6 +62,7 @@ public class QRebelTestPublisherTest {
   private static final long SLOWEST_REQUEST = 3770L;
   private static final long GLOBAL_LIMIT_BELOW_FASTEST = FASTEST_REQUEST - 1L;
   private static final long GLOBAL_LIMIT_ABOVE_SLOWEST = SLOWEST_REQUEST + 1L;
+
   @Rule
   public JenkinsRule j = new JenkinsRule();
   @Rule
