@@ -106,6 +106,11 @@
       <name>Vasily Tsvetkov</name>
       <email>Vasily.Tsvetkov@roguewave.com</email>
     </developer>
+    <developer>
+      <id>MastaP</id>
+      <name>Pavel Grigorenko</name>
+      <email>pgrigorenko@gmail.com</email>
+    </developer>
   </developers>
 
   <url>https://wiki.jenkins.io/display/JENKINS/QRebel+Plugin</url>
